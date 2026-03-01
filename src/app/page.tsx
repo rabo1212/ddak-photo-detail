@@ -6,6 +6,8 @@ import ImageUploader from "@/components/upload/ImageUploader";
 import PresetSelector from "@/components/prompt/PresetSelector";
 import ImageGallery from "@/components/gallery/ImageGallery";
 import ProductInfoForm from "@/components/product/ProductInfoForm";
+import PagePreview from "@/components/preview/PagePreview";
+import ExportOptions from "@/components/preview/ExportOptions";
 import { PRESETS } from "@/lib/presets";
 import type {
   WizardStep,
@@ -40,7 +42,7 @@ export default function Home() {
     channel: "smartstore",
   });
   // Step 6-7: 생성 결과
-  const [copyData, setCopyData] = useState<CopyData | null>(null);
+  const [_copyData, setCopyData] = useState<CopyData | null>(null);
   const [pageHtml, setPageHtml] = useState<string>("");
 
   const canNext = useCallback((): boolean => {
@@ -256,10 +258,8 @@ export default function Home() {
           <p className="text-gray-600">
             완성된 상세페이지를 확인하고 HTML을 다운로드하세요.
           </p>
-          {/* PagePreview + ExportOptions (Task 011에서 구현) */}
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-400">
-            미리보기 + 내보내기 (Task 011)
-          </div>
+          <PagePreview html={pageHtml} />
+          <ExportOptions html={pageHtml} productName={productInfo.name} />
         </div>
       )}
     </StepWizard>

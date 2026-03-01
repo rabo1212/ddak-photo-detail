@@ -68,7 +68,7 @@
       "id": "009",
       "title": "Gemini 13섹션 카피 생성 API",
       "priority": 9,
-      "status": "todo",
+      "status": "done",
       "spec": "tasks/009-copy-generation.md",
       "depends": ["002"]
     },
@@ -76,7 +76,7 @@
       "id": "010",
       "title": "HTML 상세페이지 빌드 API",
       "priority": 10,
-      "status": "todo",
+      "status": "done",
       "spec": "tasks/010-page-builder.md",
       "depends": ["009"]
     },
@@ -84,7 +84,7 @@
       "id": "011",
       "title": "미리보기 + HTML 내보내기",
       "priority": 11,
-      "status": "todo",
+      "status": "done",
       "spec": "tasks/011-preview-export.md",
       "depends": ["010"]
     }
