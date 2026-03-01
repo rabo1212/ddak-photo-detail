@@ -28,7 +28,7 @@
       "id": "004",
       "title": "이미지 업로드 컴포넌트 (react-dropzone)",
       "priority": 4,
-      "status": "todo",
+      "status": "done",
       "spec": "tasks/004-image-uploader.md",
       "depends": ["003"]
     },
@@ -36,7 +36,7 @@
       "id": "005",
       "title": "연출 프리셋 선택 UI (6종 카드)",
       "priority": 5,
-      "status": "todo",
+      "status": "done",
       "spec": "tasks/005-preset-selector.md",
       "depends": ["003"]
     },

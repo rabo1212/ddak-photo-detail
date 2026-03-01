@@ -2,6 +2,9 @@
 
 import { useState, useCallback } from "react";
 import StepWizard from "@/components/wizard/StepWizard";
+import ImageUploader from "@/components/upload/ImageUploader";
+import PresetSelector from "@/components/prompt/PresetSelector";
+import { PRESETS } from "@/lib/presets";
 import type {
   WizardStep,
   UploadedImage,
@@ -166,10 +169,7 @@ export default function Home() {
           <p className="text-gray-600">
             제품 누끼 사진을 최대 6장 업로드하세요. 정면, 측면, 후면 등 다양한 각도를 권장합니다.
           </p>
-          {/* ImageUploader 컴포넌트 (Task 004에서 구현) */}
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-400">
-            이미지 업로더 (Task 004)
-          </div>
+          <ImageUploader images={uploadedImages} onImagesChange={setUploadedImages} />
         </div>
       )}
 
@@ -180,10 +180,7 @@ export default function Home() {
           <p className="text-gray-600">
             제품에 맞는 배경/조명 스타일을 선택하세요.
           </p>
-          {/* PresetSelector 컴포넌트 (Task 005에서 구현) */}
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-400">
-            프리셋 선택기 (Task 005)
-          </div>
+          <PresetSelector presets={PRESETS} selected={selectedPreset} onSelect={setSelectedPreset} />
         </div>
       )}
 
