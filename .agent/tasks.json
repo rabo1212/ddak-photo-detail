@@ -12,7 +12,7 @@
       "id": "002",
       "title": "타입 + 상수 + Gemini 유틸 (3파일)",
       "priority": 2,
-      "status": "todo",
+      "status": "done",
       "spec": "tasks/002-types-constants.md",
       "depends": ["001"]
     },
