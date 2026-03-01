@@ -1,0 +1,92 @@
+{
+  "tasks": [
+    {
+      "id": "001",
+      "title": "Next.js 프로젝트 셋업 + shadcn/ui + 의존성 설치",
+      "priority": 1,
+      "status": "done",
+      "spec": "tasks/001-project-setup.md",
+      "depends": []
+    },
+    {
+      "id": "002",
+      "title": "타입 + 상수 + Gemini 유틸 (3파일)",
+      "priority": 2,
+      "status": "todo",
+      "spec": "tasks/002-types-constants.md",
+      "depends": ["001"]
+    },
+    {
+      "id": "003",
+      "title": "7단계 스텝 위자드 UI",
+      "priority": 3,
+      "status": "todo",
+      "spec": "tasks/003-wizard-ui.md",
+      "depends": ["002"]
+    },
+    {
+      "id": "004",
+      "title": "이미지 업로드 컴포넌트 (react-dropzone)",
+      "priority": 4,
+      "status": "todo",
+      "spec": "tasks/004-image-uploader.md",
+      "depends": ["003"]
+    },
+    {
+      "id": "005",
+      "title": "연출 프리셋 선택 UI (6종 카드)",
+      "priority": 5,
+      "status": "todo",
+      "spec": "tasks/005-preset-selector.md",
+      "depends": ["003"]
+    },
+    {
+      "id": "006",
+      "title": "fal.ai API 이미지 생성 엔드포인트",
+      "priority": 6,
+      "status": "todo",
+      "spec": "tasks/006-fal-api.md",
+      "depends": ["002"]
+    },
+    {
+      "id": "007",
+      "title": "이미지 갤러리 + 선택 + 역할 지정",
+      "priority": 7,
+      "status": "todo",
+      "spec": "tasks/007-image-gallery.md",
+      "depends": ["006"]
+    },
+    {
+      "id": "008",
+      "title": "제품 정보 입력 폼",
+      "priority": 8,
+      "status": "todo",
+      "spec": "tasks/008-product-form.md",
+      "depends": ["003"]
+    },
+    {
+      "id": "009",
+      "title": "Gemini 13섹션 카피 생성 API",
+      "priority": 9,
+      "status": "todo",
+      "spec": "tasks/009-copy-generation.md",
+      "depends": ["002"]
+    },
+    {
+      "id": "010",
+      "title": "HTML 상세페이지 빌드 API",
+      "priority": 10,
+      "status": "todo",
+      "spec": "tasks/010-page-builder.md",
+      "depends": ["009"]
+    },
+    {
+      "id": "011",
+      "title": "미리보기 + HTML 내보내기",
+      "priority": 11,
+      "status": "todo",
+      "spec": "tasks/011-preview-export.md",
+      "depends": ["010"]
+    }
+  ]
+}
