@@ -20,7 +20,7 @@
       "id": "003",
       "title": "7단계 스텝 위자드 UI",
       "priority": 3,
-      "status": "todo",
+      "status": "done",
       "spec": "tasks/003-wizard-ui.md",
       "depends": ["002"]
     },
