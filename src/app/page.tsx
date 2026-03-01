@@ -4,6 +4,8 @@ import { useState, useCallback } from "react";
 import StepWizard from "@/components/wizard/StepWizard";
 import ImageUploader from "@/components/upload/ImageUploader";
 import PresetSelector from "@/components/prompt/PresetSelector";
+import ImageGallery from "@/components/gallery/ImageGallery";
+import ProductInfoForm from "@/components/product/ProductInfoForm";
 import { PRESETS } from "@/lib/presets";
 import type {
   WizardStep,
@@ -195,9 +197,12 @@ export default function Home() {
                 ? `${generatedImages.length}장의 이미지가 생성되었습니다.`
                 : "다음 버튼을 눌러 AI 이미지를 생성하세요."}
           </p>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-400">
-            이미지 갤러리 (Task 007)
-          </div>
+          <ImageGallery
+            generatedImages={generatedImages}
+            selectedImages={selectedImages}
+            onSelectionChange={setSelectedImages}
+            isGenerating={isGenerating}
+          />
         </div>
       )}
 
@@ -208,9 +213,11 @@ export default function Home() {
           <p className="text-gray-600">
             상세페이지에 사용할 이미지를 선택하고 역할을 지정하세요.
           </p>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-400">
-            이미지 선택기 (Task 007)
-          </div>
+          <ImageGallery
+            generatedImages={generatedImages}
+            selectedImages={selectedImages}
+            onSelectionChange={setSelectedImages}
+          />
         </div>
       )}
 
@@ -221,10 +228,7 @@ export default function Home() {
           <p className="text-gray-600">
             AI가 상세페이지 카피를 작성하는 데 필요한 정보를 입력하세요.
           </p>
-          {/* ProductInfoForm 컴포넌트 (Task 008에서 구현) */}
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-400">
-            제품 정보 폼 (Task 008)
-          </div>
+          <ProductInfoForm productInfo={productInfo} onChange={setProductInfo} />
         </div>
       )}
 

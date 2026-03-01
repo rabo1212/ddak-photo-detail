@@ -44,7 +44,7 @@
       "id": "006",
       "title": "fal.ai API 이미지 생성 엔드포인트",
       "priority": 6,
-      "status": "todo",
+      "status": "done",
       "spec": "tasks/006-fal-api.md",
       "depends": ["002"]
     },
@@ -52,7 +52,7 @@
       "id": "007",
       "title": "이미지 갤러리 + 선택 + 역할 지정",
       "priority": 7,
-      "status": "todo",
+      "status": "done",
       "spec": "tasks/007-image-gallery.md",
       "depends": ["006"]
     },
@@ -60,7 +60,7 @@
       "id": "008",
       "title": "제품 정보 입력 폼",
       "priority": 8,
-      "status": "todo",
+      "status": "done",
       "spec": "tasks/008-product-form.md",
       "depends": ["003"]
     },
