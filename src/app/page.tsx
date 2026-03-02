@@ -59,13 +59,13 @@ export default function Home() {
       case 2:
         return selectedPreset !== null && customPrompt.trim() !== "";
       case 3:
-        return generatedImages.length > 0;
+        return generatedImages.length > 0 || (selectedPreset !== null && uploadedImages.length > 0);
       case 4:
         return selectedImages.length > 0;
       case 5:
         return productInfo.name.trim() !== "";
       case 6:
-        return pageHtml !== "";
+        return pageHtml !== "" || (productInfo.name.trim() !== "" && selectedImages.length > 0);
       case 7:
         return true;
       default:
