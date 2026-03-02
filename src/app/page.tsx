@@ -9,9 +9,11 @@ import ProductInfoForm from "@/components/product/ProductInfoForm";
 import PageMoodSelector from "@/components/product/PageMoodSelector";
 import PagePreview from "@/components/preview/PagePreview";
 import ExportOptions from "@/components/preview/ExportOptions";
+import CopyEditor from "@/components/editor/CopyEditor";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PRESETS } from "@/lib/presets";
-import { AlertCircle, X } from "lucide-react";
+import { AlertCircle, X, Pencil, Eye } from "lucide-react";
 import type {
   WizardStep,
   UploadedImage,
@@ -49,8 +51,13 @@ export default function Home() {
     pageMood: "minimal-white",
   });
   // Step 6-7: 생성 결과
-  const [_copyData, setCopyData] = useState<CopyData | null>(null);
+  const [copyData, setCopyData] = useState<CopyData | null>(null);
   const [pageHtml, setPageHtml] = useState<string>("");
+  // 편집 모드
+  const [editMode, setEditMode] = useState(false);
+  const [editedCopyData, setEditedCopyData] = useState<CopyData | null>(null);
+  const [editedSelectedImages, setEditedSelectedImages] = useState<SelectedImage[]>([]);
+  const [isRebuilding, setIsRebuilding] = useState(false);
 
   const canNext = useCallback((): boolean => {
     switch (currentStep) {
@@ -181,6 +188,48 @@ export default function Home() {
     setProductInfo((prev) => ({ ...prev, pageMood: mood }));
   };
 
+  // 편집 모드 진입: 현재 데이터를 deep copy
+  const enterEditMode = () => {
+    setEditedCopyData(copyData ? JSON.parse(JSON.stringify(copyData)) : null);
+    setEditedSelectedImages(selectedImages.map((si) => ({ ...si, image: { ...si.image } })));
+    setEditMode(true);
+  };
+
+  // 변경사항 적용: build-page API만 재호출
+  const rebuildPage = async () => {
+    if (!editedCopyData) return;
+    setIsRebuilding(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/build-page", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          copyData: editedCopyData,
+          selectedImages: editedSelectedImages,
+          productInfo,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "HTML 재빌드에 실패했습니다.");
+      }
+      const { html } = await res.json();
+      setPageHtml(html);
+      setCopyData(JSON.parse(JSON.stringify(editedCopyData)));
+      setSelectedImages(editedSelectedImages.map((si) => ({ ...si, image: { ...si.image } })));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "재빌드 중 오류가 발생했습니다.");
+    } finally {
+      setIsRebuilding(false);
+    }
+  };
+
+  const hasEditChanges =
+    editMode &&
+    (JSON.stringify(editedCopyData) !== JSON.stringify(copyData) ||
+      JSON.stringify(editedSelectedImages) !== JSON.stringify(selectedImages));
+
   return (
     <StepWizard
       currentStep={currentStep}
@@ -307,14 +356,76 @@ export default function Home() {
         </div>
       )}
 
-      {/* Step 7: 미리보기 */}
+      {/* Step 7: 미리보기 + 편집 */}
       {currentStep === 7 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">미리보기 & 내보내기</h2>
-          <p className="text-muted-foreground">
-            완성된 상세페이지를 확인하고 HTML을 다운로드하세요.
-          </p>
-          <PagePreview html={pageHtml} />
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">미리보기 & 내보내기</h2>
+            <Button
+              variant={editMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => (editMode ? setEditMode(false) : enterEditMode())}
+            >
+              {editMode ? (
+                <><Eye className="h-4 w-4 mr-1.5" />편집 닫기</>
+              ) : (
+                <><Pencil className="h-4 w-4 mr-1.5" />편집하기</>
+              )}
+            </Button>
+          </div>
+
+          {editMode && editedCopyData ? (
+            <>
+              {/* 데스크탑: 2컬럼 / 모바일: 탭 전환 */}
+              <div className="hidden lg:grid lg:grid-cols-[400px_1fr] gap-4">
+                <div className="max-h-[80vh] overflow-y-auto">
+                  <CopyEditor
+                    copyData={editedCopyData}
+                    selectedImages={editedSelectedImages}
+                    generatedImages={generatedImages}
+                    onCopyChange={setEditedCopyData}
+                    onImagesChange={setEditedSelectedImages}
+                    onApply={rebuildPage}
+                    isApplying={isRebuilding}
+                    hasChanges={hasEditChanges}
+                  />
+                </div>
+                <PagePreview html={pageHtml} />
+              </div>
+              {/* 모바일: 탭 */}
+              <div className="lg:hidden">
+                <Tabs defaultValue="edit">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="edit">편집</TabsTrigger>
+                    <TabsTrigger value="preview">미리보기</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="edit" className="mt-3">
+                    <CopyEditor
+                      copyData={editedCopyData}
+                      selectedImages={editedSelectedImages}
+                      generatedImages={generatedImages}
+                      onCopyChange={setEditedCopyData}
+                      onImagesChange={setEditedSelectedImages}
+                      onApply={rebuildPage}
+                      isApplying={isRebuilding}
+                      hasChanges={hasEditChanges}
+                    />
+                  </TabsContent>
+                  <TabsContent value="preview" className="mt-3">
+                    <PagePreview html={pageHtml} />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-muted-foreground">
+                완성된 상세페이지를 확인하고 HTML을 다운로드하세요.
+              </p>
+              <PagePreview html={pageHtml} />
+            </>
+          )}
+
           <ExportOptions html={pageHtml} productName={productInfo.name} />
         </div>
       )}
