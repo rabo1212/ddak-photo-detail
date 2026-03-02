@@ -72,20 +72,22 @@ export default function ProductInfoForm({ productInfo, onChange }: ProductInfoFo
       <CardContent className="space-y-4">
         {/* 제품명 */}
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">제품명 *</label>
+          <label htmlFor="product-name" className="text-sm font-medium">제품명 *</label>
           <Input
+            id="product-name"
             placeholder="예: 수분 세럼 30ml"
             value={productInfo.name}
             onChange={(e) => update("name", e.target.value)}
+            aria-required="true"
           />
         </div>
 
         {/* 카테고리 + 톤앤매너 */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">카테고리</label>
+            <label htmlFor="product-category" className="text-sm font-medium">카테고리</label>
             <Select value={productInfo.category} onValueChange={(v) => update("category", v as ProductCategory)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger id="product-category"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {CATEGORY_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -94,9 +96,9 @@ export default function ProductInfoForm({ productInfo, onChange }: ProductInfoFo
             </Select>
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">톤앤매너</label>
+            <label htmlFor="product-tone" className="text-sm font-medium">톤앤매너</label>
             <Select value={productInfo.tone} onValueChange={(v) => update("tone", v as ToneStyle)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger id="product-tone"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {TONE_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -109,17 +111,18 @@ export default function ProductInfoForm({ productInfo, onChange }: ProductInfoFo
         {/* 가격 + 판매 채널 */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">가격</label>
+            <label htmlFor="product-price" className="text-sm font-medium">가격</label>
             <Input
+              id="product-price"
               placeholder="예: 29,900원"
               value={productInfo.price}
               onChange={(e) => update("price", e.target.value)}
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">판매 채널</label>
+            <label htmlFor="product-channel" className="text-sm font-medium">판매 채널</label>
             <Select value={productInfo.channel} onValueChange={(v) => update("channel", v as SalesChannel)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger id="product-channel"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {CHANNEL_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -131,8 +134,9 @@ export default function ProductInfoForm({ productInfo, onChange }: ProductInfoFo
 
         {/* 타겟 고객 */}
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">타겟 고객</label>
+          <label htmlFor="product-target" className="text-sm font-medium">타겟 고객</label>
           <Textarea
+            id="product-target"
             placeholder="예: 20~30대 여성, 건조한 피부 고민이 있는 직장인"
             value={productInfo.target}
             onChange={(e) => update("target", e.target.value)}
@@ -154,9 +158,11 @@ export default function ProductInfoForm({ productInfo, onChange }: ProductInfoFo
             {productInfo.features.map((feature, i) => (
               <div key={i} className="flex gap-2">
                 <Input
+                  id={`feature-${i}`}
                   placeholder={`특장점 ${i + 1}`}
                   value={feature}
                   onChange={(e) => updateFeature(i, e.target.value)}
+                  aria-label={`특장점 ${i + 1}`}
                 />
                 {productInfo.features.length > 1 && (
                   <Button
@@ -164,6 +170,7 @@ export default function ProductInfoForm({ productInfo, onChange }: ProductInfoFo
                     size="icon"
                     className="h-10 w-10 shrink-0"
                     onClick={() => removeFeature(i)}
+                    aria-label={`특장점 ${i + 1} 삭제`}
                   >
                     <X className="h-4 w-4" />
                   </Button>

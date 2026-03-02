@@ -9,6 +9,7 @@ import ProductInfoForm from "@/components/product/ProductInfoForm";
 import PagePreview from "@/components/preview/PagePreview";
 import ExportOptions from "@/components/preview/ExportOptions";
 import { PRESETS } from "@/lib/presets";
+import { AlertCircle, X } from "lucide-react";
 import type {
   WizardStep,
   UploadedImage,
@@ -21,6 +22,7 @@ import type {
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
+  const [error, setError] = useState<string | null>(null);
 
   // Step 1: 업로드 이미지
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
@@ -67,13 +69,12 @@ export default function Home() {
   }, [currentStep, uploadedImages, selectedPreset, generatedImages, selectedImages, productInfo, pageHtml]);
 
   const handleNext = async () => {
+    setError(null);
     if (currentStep === 3 && generatedImages.length === 0) {
-      // AI 이미지 생성 트리거
       await generateImages();
       return;
     }
     if (currentStep === 6 && !pageHtml) {
-      // 상세페이지 생성 트리거
       await generatePage();
       return;
     }
@@ -83,6 +84,7 @@ export default function Home() {
   };
 
   const handlePrev = () => {
+    setError(null);
     if (currentStep > 1) {
       setCurrentStep((s) => (s - 1) as WizardStep);
     }
@@ -91,8 +93,8 @@ export default function Home() {
   const generateImages = async () => {
     if (!selectedPreset || uploadedImages.length === 0) return;
     setIsGenerating(true);
+    setError(null);
     try {
-      // 각 업로드 이미지에 대해 fal.ai 호출
       const results: GeneratedImage[] = [];
       for (const img of uploadedImages) {
         const formData = new FormData();
@@ -105,23 +107,27 @@ export default function Home() {
           method: "POST",
           body: formData,
         });
-        if (res.ok) {
-          const data = await res.json();
-          results.push(
-            ...data.images.map((item: { url: string; id: string }) => ({
-              id: item.id,
-              url: item.url,
-              preset_id: selectedPreset.id,
-              original_image_id: img.id,
-              prompt: selectedPreset.prompt_template,
-            }))
-          );
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "이미지 생성에 실패했습니다.");
         }
+        const data = await res.json();
+        results.push(
+          ...data.images.map((item: { url: string; id: string }) => ({
+            id: item.id,
+            url: item.url,
+            preset_id: selectedPreset.id,
+            original_image_id: img.id,
+            prompt: selectedPreset.prompt_template,
+          }))
+        );
       }
       setGeneratedImages(results);
       if (results.length > 0) {
         setCurrentStep(4);
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "이미지 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setIsGenerating(false);
     }
@@ -130,6 +136,7 @@ export default function Home() {
   const generatePage = async () => {
     if (!productInfo.name || selectedImages.length === 0) return;
     setIsGenerating(true);
+    setError(null);
     try {
       // Step 1: 카피 생성
       const copyRes = await fetch("/api/generate-copy", {
@@ -137,7 +144,10 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productInfo, selectedImages }),
       });
-      if (!copyRes.ok) throw new Error("카피 생성 실패");
+      if (!copyRes.ok) {
+        const errData = await copyRes.json().catch(() => ({}));
+        throw new Error(errData.error || "카피 생성에 실패했습니다.");
+      }
       const copy: CopyData = await copyRes.json();
       setCopyData(copy);
 
@@ -147,12 +157,15 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ copyData: copy, selectedImages, productInfo }),
       });
-      if (!buildRes.ok) throw new Error("HTML 빌드 실패");
+      if (!buildRes.ok) {
+        const errData = await buildRes.json().catch(() => ({}));
+        throw new Error(errData.error || "HTML 빌드에 실패했습니다.");
+      }
       const { html } = await buildRes.json();
       setPageHtml(html);
       setCurrentStep(7);
     } catch (err) {
-      console.error("페이지 생성 오류:", err);
+      setError(err instanceof Error ? err.message : "상세페이지 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setIsGenerating(false);
     }
@@ -166,11 +179,22 @@ export default function Home() {
       canNext={canNext()}
       isGenerating={isGenerating}
     >
+      {/* 에러 알림 배너 */}
+      {error && (
+        <div className="mb-4 bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+          <p className="text-sm flex-1">{error}</p>
+          <button onClick={() => setError(null)} className="shrink-0 hover:opacity-70">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Step 1: 사진 업로드 */}
       {currentStep === 1 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">누끼 사진 업로드</h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             제품 누끼 사진을 최대 6장 업로드하세요. 정면, 측면, 후면 등 다양한 각도를 권장합니다.
           </p>
           <ImageUploader images={uploadedImages} onImagesChange={setUploadedImages} />
@@ -181,7 +205,7 @@ export default function Home() {
       {currentStep === 2 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">연출 프리셋 선택</h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             제품에 맞는 배경/조명 스타일을 선택하세요.
           </p>
           <PresetSelector presets={PRESETS} selected={selectedPreset} onSelect={setSelectedPreset} />
@@ -192,12 +216,12 @@ export default function Home() {
       {currentStep === 3 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">AI 이미지 생성</h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             {isGenerating
               ? "AI가 이미지를 생성하고 있습니다..."
               : generatedImages.length > 0
                 ? `${generatedImages.length}장의 이미지가 생성되었습니다.`
-                : "다음 버튼을 눌러 AI 이미지를 생성하세요."}
+                : "아래 버튼을 눌러 AI 이미지를 생성하세요."}
           </p>
           <ImageGallery
             generatedImages={generatedImages}
@@ -212,7 +236,7 @@ export default function Home() {
       {currentStep === 4 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">이미지 선택</h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             상세페이지에 사용할 이미지를 선택하고 역할을 지정하세요.
           </p>
           <ImageGallery
@@ -227,7 +251,7 @@ export default function Home() {
       {currentStep === 5 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">제품 정보 입력</h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             AI가 상세페이지 카피를 작성하는 데 필요한 정보를 입력하세요.
           </p>
           <ProductInfoForm productInfo={productInfo} onChange={setProductInfo} />
@@ -238,14 +262,20 @@ export default function Home() {
       {currentStep === 6 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">AI 상세페이지 생성</h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             {isGenerating
               ? "AI가 13섹션 상세페이지를 만들고 있습니다..."
-              : "다음 버튼을 눌러 상세페이지를 생성하세요."}
+              : "아래 버튼을 눌러 상세페이지를 생성하세요."}
           </p>
           {isGenerating && (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+            <div className="flex flex-col items-center gap-4 py-16">
+              <div className="relative">
+                <div className="w-16 h-16 border-4 border-primary/20 rounded-full" />
+                <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute inset-0" />
+              </div>
+              <p className="text-sm text-muted-foreground animate-pulse">
+                보통 30초~1분 정도 소요됩니다
+              </p>
             </div>
           )}
         </div>
@@ -255,7 +285,7 @@ export default function Home() {
       {currentStep === 7 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">미리보기 & 내보내기</h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             완성된 상세페이지를 확인하고 HTML을 다운로드하세요.
           </p>
           <PagePreview html={pageHtml} />

@@ -14,9 +14,8 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Check, ZoomIn } from "lucide-react";
+import { Check, ZoomIn, ImageIcon } from "lucide-react";
 
 interface ImageGalleryProps {
   generatedImages: GeneratedImage[];
@@ -83,8 +82,10 @@ export default function ImageGallery({
 
   if (generatedImages.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400">
-        아직 생성된 이미지가 없습니다.
+      <div className="text-center py-16 text-muted-foreground">
+        <ImageIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
+        <p className="font-medium">아직 생성된 이미지가 없습니다</p>
+        <p className="text-sm mt-1">이전 단계에서 프리셋을 선택한 뒤 생성해주세요</p>
       </div>
     );
   }
@@ -169,11 +170,7 @@ export default function ImageGallery({
                 </Select>
               )}
 
-              {selected && (
-                <Badge variant="secondary" className="text-xs">
-                  {ROLE_OPTIONS.find((r) => r.value === getRole(img.id))?.label}
-                </Badge>
-              )}
+              {/* Badge 중복 제거 — Select가 이미 역할 표시 */}
             </div>
           );
         })}
