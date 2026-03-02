@@ -4,14 +4,24 @@ import { v4 as uuid } from "uuid";
 // FLUX Kontext Pro — 현존 최고 사실감, 참조 이미지 기반 합성 ($0.04/장)
 const FAL_API_URL = "https://fal.run/fal-ai/flux-pro/kontext";
 
-// 장면 변형: 각 요청마다 다른 배경/조명을 지시해서 다양성 확보
-const SCENE_VARIATIONS = [
-  "", // 원본 프롬프트 그대로
-  ". Use soft diffused window light from the left side, with gentle shadows and shallow depth of field on the background",
-  ". Place on a warm-toned wooden surface with morning sunlight, blurred cozy interior behind",
-  ". Use dramatic side lighting from the right with deeper shadows, slightly moody atmosphere",
-  ". Bright overhead soft light, minimal shadows, clean and airy feel with light background",
-  ". Golden hour warm tones with subtle backlight glow, creating a premium inviting atmosphere",
+// 샷 타입별 구도 지시 — 4장이 각각 다른 구도로 생성됨
+const SHOT_TYPES = [
+  {
+    name: "hero",
+    suffix: ". Frame the full product centered in the shot with generous negative space around it for text overlay. Medium shot, product fills about 60% of frame. Clean, balanced composition perfect for a hero banner.",
+  },
+  {
+    name: "closeup",
+    suffix: ". Extreme close-up macro shot focusing on the product's key detail, texture, or label. Shallow depth of field f/1.8, only the focal point is sharp. Show material quality and craftsmanship up close.",
+  },
+  {
+    name: "lifestyle",
+    suffix: ". Place the product in a natural lifestyle scene as if someone is about to use it. Include contextual props (a hand reaching, a table setting, morning routine). Environmental portrait style, product is part of a larger scene. Warm and inviting atmosphere.",
+  },
+  {
+    name: "angle",
+    suffix: ". Dramatic 45-degree low angle or three-quarter view of the product, showing depth and dimension. Dynamic perspective that makes the product look powerful and substantial. Slight wide-angle distortion for impact.",
+  },
 ];
 
 export async function POST(req: NextRequest) {
@@ -36,11 +46,11 @@ export async function POST(req: NextRequest) {
     const mimeType = imageFile.type || "image/png";
     const dataUrl = `data:${mimeType};base64,${base64}`;
 
-    // 여러 장 생성: 각각 다른 seed + 프롬프트 변형으로 병렬 호출
-    const numImages = Math.min(count, 4);
+    // 4장 생성: 각각 다른 샷 타입(구도) + seed로 다양성 확보
+    const numImages = Math.min(count, SHOT_TYPES.length);
     const promises = Array.from({ length: numImages }, (_, i) => {
       const seed = Math.floor(Math.random() * 2147483647);
-      const variation = SCENE_VARIATIONS[i % SCENE_VARIATIONS.length];
+      const shot = SHOT_TYPES[i % SHOT_TYPES.length];
       return fetch(FAL_API_URL, {
         method: "POST",
         headers: {
@@ -48,7 +58,7 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: prompt + variation,
+          prompt: prompt + shot.suffix,
           image_url: dataUrl,
           guidance_scale: 3.5,
           output_format: "png",
