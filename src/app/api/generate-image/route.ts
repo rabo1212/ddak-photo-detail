@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuid } from "uuid";
 
-// 동기 방식 (fal.run) — 바로 결과 반환, 큐 폴링 불필요
-const FAL_API_URL = "https://fal.run/fal-ai/iclight-v2";
+// FLUX Kontext Pro — 현존 최고 사실감, 참조 이미지 기반 합성 ($0.04/장)
+const FAL_API_URL = "https://fal.run/fal-ai/flux-pro/kontext";
 
-// 각 요청마다 다른 결과를 내기 위한 프롬프트 변형
-const PROMPT_VARIATIONS = [
-  "", // 원본 그대로
-  ", shot from a slightly different angle, subtle warm lighting",
-  ", with softer diffused lighting, gentle shadows on the left",
-  ", dramatic side lighting from the right, deeper shadows",
-  ", overhead soft light, minimal shadows, bright and airy",
-  ", golden hour warm tones, slight backlight glow",
+// 장면 변형: 각 요청마다 다른 배경/조명을 지시해서 다양성 확보
+const SCENE_VARIATIONS = [
+  "", // 원본 프롬프트 그대로
+  ". Use soft diffused window light from the left side, with gentle shadows and shallow depth of field on the background",
+  ". Place on a warm-toned wooden surface with morning sunlight, blurred cozy interior behind",
+  ". Use dramatic side lighting from the right with deeper shadows, slightly moody atmosphere",
+  ". Bright overhead soft light, minimal shadows, clean and airy feel with light background",
+  ". Golden hour warm tones with subtle backlight glow, creating a premium inviting atmosphere",
 ];
 
 export async function POST(req: NextRequest) {
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const numImages = Math.min(count, 4);
     const promises = Array.from({ length: numImages }, (_, i) => {
       const seed = Math.floor(Math.random() * 2147483647);
-      const variation = PROMPT_VARIATIONS[i % PROMPT_VARIATIONS.length];
+      const variation = SCENE_VARIATIONS[i % SCENE_VARIATIONS.length];
       return fetch(FAL_API_URL, {
         method: "POST",
         headers: {
@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           prompt: prompt + variation,
           image_url: dataUrl,
-          image_size: "square_hd",
+          guidance_scale: 3.5,
+          output_format: "png",
           seed,
         }),
       });
@@ -62,16 +63,20 @@ export async function POST(req: NextRequest) {
     for (const res of responses) {
       if (res.status === "fulfilled" && res.value.ok) {
         const data = await res.value.json();
+        // FLUX Kontext Pro: images 배열로 반환
         if (data.images) {
           for (const img of data.images) {
             images.push({ id: uuid(), url: img.url });
           }
         }
+      } else if (res.status === "fulfilled" && !res.value.ok) {
+        const errText = await res.value.text().catch(() => "");
+        console.error("FLUX Kontext Pro error:", res.value.status, errText);
       }
     }
 
     if (images.length === 0) {
-      return NextResponse.json({ error: "이미지 생성에 실패했습니다." }, { status: 500 });
+      return NextResponse.json({ error: "이미지 생성에 실패했습니다. 다시 시도해주세요." }, { status: 500 });
     }
 
     return NextResponse.json({ images });
