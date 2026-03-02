@@ -1,6 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callGemini, extractHtml } from "@/lib/gemini";
+import { PAGE_MOODS } from "@/lib/types";
 import type { CopyData, SelectedImage, ProductInfo } from "@/lib/types";
+
+const MOOD_DESIGN_DIRECTIONS: Record<string, string> = {
+  "minimal-white": `
+    - 배경: 순백(#FFFFFF)과 연한 그레이(#F8F9FA) 교차
+    - 여백을 극대화, 요소 간 충분한 공간
+    - 색상: 브랜드 컬러 1가지만 포인트로 절제 사용
+    - 타이포: 가늘고 세련된 폰트 웨이트, 대비는 크기로만
+    - 그림자 최소화, 얇은 보더 라인 활용`,
+  "luxury-dark": `
+    - 배경: 짙은 다크(#0F0F0F ~ #1A1A2E) 기반
+    - 텍스트: 화이트 + 골드(#D4AF37) 또는 실버(#C0C0C0) 포인트
+    - 제품 이미지에 은은한 글로우/림라이트 효과
+    - 고급 서체 느낌, 자간 넓게, 대문자 활용
+    - 섹션 구분: 골드 라인 또는 미묘한 그래디언트`,
+  "soft-pastel": `
+    - 배경: 연한 파스텔 톤 교차 (라벤더, 민트, 피치, 스카이블루)
+    - 둥근 모서리(rounded-2xl~3xl), 부드러운 그림자
+    - 일러스트풍 아이콘, 손그림 느낌의 장식 요소
+    - 따뜻하고 친근한 분위기, 곡선 레이아웃
+    - 폰트: 둥글둥글한 느낌의 웨이트`,
+  "vivid-pop": `
+    - 배경: 원색 블록 교차 (노랑, 빨강, 파랑, 초록 등 채도 높은 색)
+    - 굵은 타이포, 큰 폰트 사이즈, 임팩트 있는 레이아웃
+    - 기울어진 요소, 비대칭 구성, 에너지 넘치는 배치
+    - 뱃지/스티커 스타일 장식 요소
+    - 대비를 극대화한 CTA 버튼`,
+  "modern-gradient": `
+    - 배경: 인디고→퍼플, 블루→시안 등 트렌디한 그래디언트
+    - 글래스모피즘: 반투명 카드(backdrop-blur, bg-white/10)
+    - 미묘한 네온 글로우 효과
+    - 모던하고 세련된 느낌, 약간의 3D 감각
+    - 다크/라이트 섹션을 번갈아 배치`,
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +47,11 @@ export async function POST(req: NextRequest) {
     if (!copyData?.sections) {
       return NextResponse.json({ error: "카피 데이터가 필요합니다." }, { status: 400 });
     }
+
+    // 페이지 무드 정보
+    const pageMood = productInfo.pageMood || "minimal-white";
+    const moodInfo = PAGE_MOODS.find((m) => m.value === pageMood);
+    const moodDirection = MOOD_DESIGN_DIRECTIONS[pageMood] || MOOD_DESIGN_DIRECTIONS["minimal-white"];
 
     // 이미지 역할별 URL 매핑
     const imagesByRole: Record<string, string[]> = {};
@@ -35,6 +74,12 @@ export async function POST(req: NextRequest) {
 
 ## 제품: ${productInfo.name}
 ## 판매 채널: ${productInfo.channel}
+
+## 🎨 선택된 페이지 무드: ${moodInfo?.name || "미니멀 화이트"}
+${moodInfo?.description || ""}
+
+### 무드 디자인 디렉션 (반드시 따르세요!)
+${moodDirection}
 
 ## 사용 가능한 이미지
 ${imageList}
@@ -65,12 +110,9 @@ ${JSON.stringify(copyData, null, 2)}
   - CTA: 풀블리드 배경 + 가격 + 큰 버튼
 
 ### 2. 비주얼 디자인
-- **일관된 브랜드 컬러 시스템**: 메인 1색 + 강조 1색 + 중립색. 제품 카테고리에 맞춰 선택
-  - 화장품: 연보라/라벤더 or 로즈골드 계열
-  - 식품: 오렌지/그린 계열
-  - 전자기기: 다크블루/네이비 계열
-  - 기본: 블루+화이트 깔끔 계열
-- **배경색 교차**: 흰색과 연한 컬러 배경을 섹션마다 번갈아 배치하여 시각적 리듬감
+- **선택된 무드("${moodInfo?.name}")에 맞는 색상 시스템을 반드시 적용하세요!**
+- 위의 "무드 디자인 디렉션"에 명시된 배경색, 텍스트색, 포인트색을 따르세요
+- **배경색 교차**: 섹션마다 번갈아 배치하여 시각적 리듬감
 - **타이포 위계**: 섹션 제목은 bold 32-40px, 소제목 20-24px, 본문 16-18px
 - **강조 텍스트**: 핵심 키워드는 브랜드 컬러로 색상 변경 또는 하이라이트 배경
 - **그림자와 라운딩**: 카드형 요소는 shadow-lg + rounded-2xl로 고급스럽게

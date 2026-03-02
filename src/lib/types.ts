@@ -3,10 +3,10 @@ export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export const STEP_LABELS: Record<WizardStep, string> = {
   1: "사진 업로드",
-  2: "프리셋 선택",
+  2: "연출 설정",
   3: "AI 생성",
   4: "이미지 선택",
-  5: "제품 정보",
+  5: "제품 & 무드",
   6: "페이지 생성",
   7: "미리보기",
 };
@@ -63,6 +63,17 @@ export type ProductCategory = "cosmetics" | "food" | "electronics" | "fashion" |
 export type ToneStyle = "friendly" | "professional" | "luxury" | "casual";
 export type SalesChannel = "coupang" | "smartstore" | "own" | "instagram" | "amazon";
 
+// === 페이지 비주얼 무드 ===
+export type PageMood = "minimal-white" | "luxury-dark" | "soft-pastel" | "vivid-pop" | "modern-gradient";
+
+export const PAGE_MOODS: { value: PageMood; name: string; description: string; colors: string }[] = [
+  { value: "minimal-white", name: "미니멀 화이트", description: "깔끔한 흰 배경, 넓은 여백, 절제된 색상", colors: "from-gray-50 to-white" },
+  { value: "luxury-dark", name: "럭셔리 다크", description: "다크 배경, 골드/실버 포인트, 고급 느낌", colors: "from-gray-900 to-black" },
+  { value: "soft-pastel", name: "소프트 파스텔", description: "연한 파스텔 톤, 부드러운 곡선, 따뜻한 분위기", colors: "from-pink-50 to-purple-50" },
+  { value: "vivid-pop", name: "비비드 팝", description: "선명한 원색, 굵은 타이포, 에너지 넘치는 레이아웃", colors: "from-yellow-400 to-red-500" },
+  { value: "modern-gradient", name: "모던 그래디언트", description: "그래디언트 배경, 글래스모피즘, 트렌디한 디자인", colors: "from-indigo-500 to-purple-600" },
+];
+
 export interface ProductInfo {
   name: string;
   category: ProductCategory;
@@ -71,6 +82,7 @@ export interface ProductInfo {
   features: string[];
   tone: ToneStyle;
   channel: SalesChannel;
+  pageMood: PageMood;
 }
 
 // === 13섹션 카피 (landing-agent-team에서 가져옴) ===

@@ -6,8 +6,10 @@ import ImageUploader from "@/components/upload/ImageUploader";
 import PresetSelector from "@/components/prompt/PresetSelector";
 import ImageGallery from "@/components/gallery/ImageGallery";
 import ProductInfoForm from "@/components/product/ProductInfoForm";
+import PageMoodSelector from "@/components/product/PageMoodSelector";
 import PagePreview from "@/components/preview/PagePreview";
 import ExportOptions from "@/components/preview/ExportOptions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PRESETS } from "@/lib/presets";
 import { AlertCircle, X } from "lucide-react";
 import type {
@@ -17,6 +19,7 @@ import type {
   GeneratedImage,
   SelectedImage,
   ProductInfo,
+  PageMood,
   CopyData,
 } from "@/lib/types";
 
@@ -26,14 +29,15 @@ export default function Home() {
 
   // Step 1: 업로드 이미지
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
-  // Step 2: 선택된 프리셋
+  // Step 2: 선택된 프리셋 + 커스텀 프롬프트
   const [selectedPreset, setSelectedPreset] = useState<Preset | null>(null);
+  const [customPrompt, setCustomPrompt] = useState("");
   // Step 3: AI 생성 이미지
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   // Step 4: 선택된 이미지
   const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([]);
-  // Step 5: 제품 정보
+  // Step 5: 제품 정보 + 페이지 무드
   const [productInfo, setProductInfo] = useState<ProductInfo>({
     name: "",
     category: "etc",
@@ -42,6 +46,7 @@ export default function Home() {
     features: [""],
     tone: "friendly",
     channel: "smartstore",
+    pageMood: "minimal-white",
   });
   // Step 6-7: 생성 결과
   const [_copyData, setCopyData] = useState<CopyData | null>(null);
@@ -52,7 +57,7 @@ export default function Home() {
       case 1:
         return uploadedImages.length > 0;
       case 2:
-        return selectedPreset !== null;
+        return selectedPreset !== null && customPrompt.trim() !== "";
       case 3:
         return generatedImages.length > 0;
       case 4:
@@ -66,7 +71,7 @@ export default function Home() {
       default:
         return false;
     }
-  }, [currentStep, uploadedImages, selectedPreset, generatedImages, selectedImages, productInfo, pageHtml]);
+  }, [currentStep, uploadedImages, selectedPreset, customPrompt, generatedImages, selectedImages, productInfo, pageHtml]);
 
   const handleNext = async () => {
     setError(null);
@@ -96,10 +101,13 @@ export default function Home() {
     setError(null);
     try {
       const results: GeneratedImage[] = [];
+      // 커스텀 프롬프트가 있으면 그걸 사용, 없으면 프리셋 기본
+      const prompt = customPrompt.trim() || selectedPreset.prompt_template;
+
       for (const img of uploadedImages) {
         const formData = new FormData();
         formData.append("image", img.file);
-        formData.append("prompt", selectedPreset.prompt_template);
+        formData.append("prompt", prompt);
         formData.append("preset_id", selectedPreset.id);
         formData.append("count", "4");
 
@@ -118,7 +126,7 @@ export default function Home() {
             url: item.url,
             preset_id: selectedPreset.id,
             original_image_id: img.id,
-            prompt: selectedPreset.prompt_template,
+            prompt,
           }))
         );
       }
@@ -138,7 +146,6 @@ export default function Home() {
     setIsGenerating(true);
     setError(null);
     try {
-      // Step 1: 카피 생성
       const copyRes = await fetch("/api/generate-copy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -151,7 +158,6 @@ export default function Home() {
       const copy: CopyData = await copyRes.json();
       setCopyData(copy);
 
-      // Step 2: HTML 빌드
       const buildRes = await fetch("/api/build-page", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -171,6 +177,10 @@ export default function Home() {
     }
   };
 
+  const updatePageMood = (mood: PageMood) => {
+    setProductInfo((prev) => ({ ...prev, pageMood: mood }));
+  };
+
   return (
     <StepWizard
       currentStep={currentStep}
@@ -179,7 +189,6 @@ export default function Home() {
       canNext={canNext()}
       isGenerating={isGenerating}
     >
-      {/* 에러 알림 배너 */}
       {error && (
         <div className="mb-4 bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg flex items-start gap-3">
           <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
@@ -201,14 +210,20 @@ export default function Home() {
         </div>
       )}
 
-      {/* Step 2: 프리셋 선택 */}
+      {/* Step 2: 연출 설정 (프리셋 + 프롬프트 편집) */}
       {currentStep === 2 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">연출 프리셋 선택</h2>
+          <h2 className="text-2xl font-bold">연출 설정</h2>
           <p className="text-muted-foreground">
-            제품에 맞는 배경/조명 스타일을 선택하세요.
+            프리셋을 선택하면 프롬프트가 자동 완성됩니다. 필요하면 직접 수정하세요.
           </p>
-          <PresetSelector presets={PRESETS} selected={selectedPreset} onSelect={setSelectedPreset} />
+          <PresetSelector
+            presets={PRESETS}
+            selected={selectedPreset}
+            onSelect={setSelectedPreset}
+            customPrompt={customPrompt}
+            onCustomPromptChange={setCustomPrompt}
+          />
         </div>
       )}
 
@@ -247,14 +262,25 @@ export default function Home() {
         </div>
       )}
 
-      {/* Step 5: 제품 정보 입력 */}
+      {/* Step 5: 제품 정보 + 페이지 무드 (탭) */}
       {currentStep === 5 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">제품 정보 입력</h2>
+          <h2 className="text-2xl font-bold">제품 정보 & 페이지 설정</h2>
           <p className="text-muted-foreground">
-            AI가 상세페이지 카피를 작성하는 데 필요한 정보를 입력하세요.
+            제품 정보를 입력하고, 원하는 상세페이지 무드를 선택하세요.
           </p>
-          <ProductInfoForm productInfo={productInfo} onChange={setProductInfo} />
+          <Tabs defaultValue="product" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="product">제품 정보</TabsTrigger>
+              <TabsTrigger value="mood">페이지 무드</TabsTrigger>
+            </TabsList>
+            <TabsContent value="product" className="mt-4">
+              <ProductInfoForm productInfo={productInfo} onChange={setProductInfo} />
+            </TabsContent>
+            <TabsContent value="mood" className="mt-4">
+              <PageMoodSelector selected={productInfo.pageMood} onSelect={updatePageMood} />
+            </TabsContent>
+          </Tabs>
         </div>
       )}
 
