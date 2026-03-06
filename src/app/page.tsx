@@ -9,6 +9,7 @@ import ProductInfoForm from "@/components/product/ProductInfoForm";
 import PageMoodSelector from "@/components/product/PageMoodSelector";
 import PagePreview from "@/components/preview/PagePreview";
 import ExportOptions from "@/components/preview/ExportOptions";
+import VideoGenerator from "@/components/video/VideoGenerator";
 import CopyEditor from "@/components/editor/CopyEditor";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +24,7 @@ import type {
   ProductInfo,
   PageMood,
   CopyData,
+  VideoGeneration,
 } from "@/lib/types";
 
 export default function Home() {
@@ -53,6 +55,8 @@ export default function Home() {
   // Step 6-7: 생성 결과
   const [copyData, setCopyData] = useState<CopyData | null>(null);
   const [pageHtml, setPageHtml] = useState<string>("");
+  // 영상 생성
+  const [videoGenerations, setVideoGenerations] = useState<VideoGeneration[]>([]);
   // 편집 모드
   const [editMode, setEditMode] = useState(false);
   const [editedCopyData, setEditedCopyData] = useState<CopyData | null>(null);
@@ -427,6 +431,12 @@ export default function Home() {
           )}
 
           <ExportOptions html={pageHtml} productName={productInfo.name} />
+          <VideoGenerator
+            selectedImages={selectedImages}
+            category={productInfo.category}
+            videoGenerations={videoGenerations}
+            onVideoGenerationsChange={setVideoGenerations}
+          />
         </div>
       )}
     </StepWizard>

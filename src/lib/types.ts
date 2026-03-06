@@ -111,6 +111,27 @@ export interface CopyData {
   };
 }
 
+// === 영상 생성 ===
+export interface VideoGeneration {
+  id: string;
+  sourceImageUrl: string;
+  operationName: string;
+  status: "pending" | "generating" | "completed" | "failed";
+  videoUrl?: string;
+  prompt: string;
+  error?: string;
+}
+
+// 카테고리별 영상 프롬프트
+export const VIDEO_PROMPTS: Record<ProductCategory, string> = {
+  cosmetics: "Slowly rotate the product 360 degrees on a clean surface, highlight texture and light reflections on the packaging. Smooth camera movement, no text overlay, no voice.",
+  food: "Showcase the product naturally, emphasizing freshness and appeal. Gentle camera pan around the product with soft natural lighting. No text overlay, no voice.",
+  electronics: "Close-up product showcase highlighting design details and features. Clean minimal background, smooth dolly movement around the product. No text overlay, no voice.",
+  fashion: "Model wearing the garment, showing fit and fabric with various poses and gentle rotation. No text overlay, no voice, last frame matches first frame for seamless loop.",
+  living: "Product placed in a cozy living space setting, warm ambient lighting, slow camera movement revealing the product in context. No text overlay, no voice.",
+  etc: "Elegant product showcase with smooth 360-degree rotation, professional studio lighting, clean background. No text overlay, no voice.",
+};
+
 // === 디자인 스펙 ===
 export interface DesignSpec {
   style: string;
