@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeftRight } from "lucide-react";
+import Image from "next/image";
 import type { SelectedImage, GeneratedImage } from "@/lib/types";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -33,10 +34,13 @@ export default function ImageSwapper({ selectedImages, generatedImages, onSwap }
       <div className="space-y-2">
         {selectedImages.map((si, i) => (
           <div key={si.image.id} className="flex items-center gap-3 p-2 border rounded-md">
-            <img
+            <Image
               src={si.image.url}
               alt={si.role}
+              width={48}
+              height={48}
               className="w-12 h-12 rounded object-cover shrink-0"
+              unoptimized
             />
             <Badge variant="secondary" className="text-[10px]">
               {ROLE_LABELS[si.role] || si.role}
@@ -80,10 +84,13 @@ export default function ImageSwapper({ selectedImages, generatedImages, onSwap }
                     isCurrentlySelected ? "border-primary ring-2 ring-primary/30" : "border-transparent"
                   }`}
                 >
-                  <img
+                  <Image
                     src={img.url}
                     alt="생성 이미지"
+                    width={200}
+                    height={200}
                     className="w-full aspect-square object-cover"
+                    unoptimized
                   />
                   {isCurrentlySelected && (
                     <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">

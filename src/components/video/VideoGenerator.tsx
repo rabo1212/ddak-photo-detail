@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Video, Download, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import Image from "next/image";
 import type { SelectedImage, ProductCategory, VideoGeneration } from "@/lib/types";
 
 interface VideoGeneratorProps {
@@ -158,10 +159,13 @@ export default function VideoGenerator({
       <CardContent className="space-y-4">
         {/* 소스 이미지 미리보기 */}
         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-          <img
+          <Image
             src={heroImage.image.url}
             alt="소스 이미지"
+            width={64}
+            height={64}
             className="w-16 h-16 object-cover rounded"
+            unoptimized
           />
           <div className="text-sm">
             <p className="font-medium">Hero 이미지로 영상 생성</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import StepWizard from "@/components/wizard/StepWizard";
 import ImageUploader from "@/components/upload/ImageUploader";
 import PresetSelector from "@/components/prompt/PresetSelector";
@@ -62,6 +62,44 @@ export default function Home() {
   const [editedCopyData, setEditedCopyData] = useState<CopyData | null>(null);
   const [editedSelectedImages, setEditedSelectedImages] = useState<SelectedImage[]>([]);
   const [isRebuilding, setIsRebuilding] = useState(false);
+
+  // localStorage 복구 (마운트 시 1회)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ddak-state");
+      if (!saved) return;
+      const s = JSON.parse(saved);
+      if (s.currentStep) setCurrentStep(s.currentStep);
+      if (s.selectedPreset) setSelectedPreset(s.selectedPreset);
+      if (s.customPrompt) setCustomPrompt(s.customPrompt);
+      if (s.generatedImages?.length) setGeneratedImages(s.generatedImages);
+      if (s.selectedImages?.length) setSelectedImages(s.selectedImages);
+      if (s.productInfo) setProductInfo(s.productInfo);
+      if (s.copyData) setCopyData(s.copyData);
+      if (s.pageHtml) setPageHtml(s.pageHtml);
+    } catch {
+      // 손상된 데이터는 무시
+    }
+  }, []);
+
+  // localStorage 저장 (상태 변경 시)
+  useEffect(() => {
+    const state = {
+      currentStep,
+      selectedPreset,
+      customPrompt,
+      generatedImages,
+      selectedImages,
+      productInfo,
+      copyData,
+      pageHtml,
+    };
+    try {
+      localStorage.setItem("ddak-state", JSON.stringify(state));
+    } catch {
+      // 용량 초과 시 무시
+    }
+  }, [currentStep, selectedPreset, customPrompt, generatedImages, selectedImages, productInfo, copyData, pageHtml]);
 
   const canNext = useCallback((): boolean => {
     switch (currentStep) {
