@@ -41,11 +41,25 @@ export interface Preset {
   best_for: string;
 }
 
+// === AI 제품 분석 & 동적 프롬프트 ===
+export interface ProductAnalysis {
+  name: string;
+  category: string;
+  material: string;
+  colors: string[];
+}
+
+export interface GeneratedPrompt {
+  shot_type: string;
+  scene: string;
+  rationale_ko: string;
+}
+
 // === AI 생성 이미지 ===
 export interface GeneratedImage {
   id: string;
   url: string;
-  preset_id: string;
+  shot_type: string;
   original_image_id: string;
   prompt: string;
 }

@@ -14,7 +14,9 @@ async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function callGeminiBase(prompt: string, options: GeminiOptions = {}): Promise<string> {
+type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
+
+async function callGeminiBase(prompt: string, options: GeminiOptions = {}, parts?: GeminiPart[]): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY 환경변수가 설정되지 않았습니다.");
 
@@ -28,6 +30,8 @@ async function callGeminiBase(prompt: string, options: GeminiOptions = {}): Prom
     generationConfig.responseMimeType = responseMimeType;
   }
 
+  const contentParts: GeminiPart[] = parts || [{ text: prompt }];
+
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -36,7 +40,7 @@ async function callGeminiBase(prompt: string, options: GeminiOptions = {}): Prom
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [{ parts: contentParts }],
           generationConfig,
         }),
       });
@@ -98,6 +102,22 @@ export async function callGeminiPrecise(prompt: string): Promise<string> {
 /** 레거시 호환용 (기존 코드에서 사용) */
 export async function callGemini(prompt: string): Promise<string> {
   return callGeminiBase(prompt);
+}
+
+/** Vision (멀티모달) — 이미지 분석 + JSON 응답 (temperature 0.8) */
+export async function callGeminiVision(
+  prompt: string,
+  imageBase64: string,
+  mimeType: string
+): Promise<string> {
+  const parts: GeminiPart[] = [
+    { text: prompt },
+    { inlineData: { mimeType, data: imageBase64 } },
+  ];
+  return callGeminiBase(prompt, {
+    temperature: 0.8,
+    responseMimeType: "application/json",
+  }, parts);
 }
 
 export function extractJson(text: string): string {

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import StepWizard from "@/components/wizard/StepWizard";
 import ImageUploader from "@/components/upload/ImageUploader";
-import PresetSelector from "@/components/prompt/PresetSelector";
+import StyleHintInput from "@/components/prompt/StyleHintInput";
 import ImageGallery from "@/components/gallery/ImageGallery";
 import ProductInfoForm from "@/components/product/ProductInfoForm";
 import PageMoodSelector from "@/components/product/PageMoodSelector";
@@ -13,13 +13,12 @@ import VideoGenerator from "@/components/video/VideoGenerator";
 import CopyEditor from "@/components/editor/CopyEditor";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PRESETS } from "@/lib/presets";
 import { AlertCircle, X, Pencil, Eye } from "lucide-react";
 import type {
   WizardStep,
   UploadedImage,
-  Preset,
   GeneratedImage,
+  GeneratedPrompt,
   SelectedImage,
   ProductInfo,
   PageMood,
@@ -33,9 +32,9 @@ export default function Home() {
 
   // Step 1: 업로드 이미지
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
-  // Step 2: 선택된 프리셋 + 커스텀 프롬프트
-  const [selectedPreset, setSelectedPreset] = useState<Preset | null>(null);
-  const [customPrompt, setCustomPrompt] = useState("");
+  // Step 2: 스타일 힌트
+  const [styleHint, setStyleHint] = useState("");
+  const [generatedPrompts, setGeneratedPrompts] = useState<GeneratedPrompt[]>([]);
   // Step 3: AI 생성 이미지
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -70,8 +69,8 @@ export default function Home() {
       if (!saved) return;
       const s = JSON.parse(saved);
       if (s.currentStep) setCurrentStep(s.currentStep);
-      if (s.selectedPreset) setSelectedPreset(s.selectedPreset);
-      if (s.customPrompt) setCustomPrompt(s.customPrompt);
+      if (s.styleHint) setStyleHint(s.styleHint);
+      if (s.generatedPrompts?.length) setGeneratedPrompts(s.generatedPrompts);
       if (s.generatedImages?.length) setGeneratedImages(s.generatedImages);
       if (s.selectedImages?.length) setSelectedImages(s.selectedImages);
       if (s.productInfo) setProductInfo(s.productInfo);
@@ -86,8 +85,8 @@ export default function Home() {
   useEffect(() => {
     const state = {
       currentStep,
-      selectedPreset,
-      customPrompt,
+      styleHint,
+      generatedPrompts,
       generatedImages,
       selectedImages,
       productInfo,
@@ -99,16 +98,16 @@ export default function Home() {
     } catch {
       // 용량 초과 시 무시
     }
-  }, [currentStep, selectedPreset, customPrompt, generatedImages, selectedImages, productInfo, copyData, pageHtml]);
+  }, [currentStep, styleHint, generatedPrompts, generatedImages, selectedImages, productInfo, copyData, pageHtml]);
 
   const canNext = useCallback((): boolean => {
     switch (currentStep) {
       case 1:
         return uploadedImages.length > 0;
       case 2:
-        return selectedPreset !== null && customPrompt.trim() !== "";
+        return uploadedImages.length > 0; // 힌트는 선택사항
       case 3:
-        return generatedImages.length > 0 || (selectedPreset !== null && uploadedImages.length > 0);
+        return generatedImages.length > 0 || uploadedImages.length > 0;
       case 4:
         return selectedImages.length > 0;
       case 5:
@@ -120,10 +119,17 @@ export default function Home() {
       default:
         return false;
     }
-  }, [currentStep, uploadedImages, selectedPreset, customPrompt, generatedImages, selectedImages, productInfo, pageHtml]);
+  }, [currentStep, uploadedImages, generatedImages, selectedImages, productInfo, pageHtml]);
 
   const handleNext = async () => {
     setError(null);
+    // Step 2 → 3: 자동으로 이미지 생성 시작
+    if (currentStep === 2) {
+      setCurrentStep(3);
+      await generateImages();
+      return;
+    }
+    // Step 3에서 재시도 (생성 실패 시)
     if (currentStep === 3 && generatedImages.length === 0) {
       await generateImages();
       return;
@@ -145,40 +151,61 @@ export default function Home() {
   };
 
   const generateImages = async () => {
-    if (!selectedPreset || uploadedImages.length === 0) return;
+    if (uploadedImages.length === 0) return;
     setIsGenerating(true);
     setError(null);
     try {
-      const results: GeneratedImage[] = [];
-      // 커스텀 프롬프트가 있으면 그걸 사용, 없으면 프리셋 기본
-      const prompt = customPrompt.trim() || selectedPreset.prompt_template;
+      // Step 1: 첫 이미지로 Gemini 제품 분석 (1회만)
+      const firstImg = uploadedImages[0];
+      const analyzeForm = new FormData();
+      analyzeForm.append("image", firstImg.file);
+      if (styleHint.trim()) {
+        analyzeForm.append("hint", styleHint.trim());
+      }
 
-      for (const img of uploadedImages) {
-        const formData = new FormData();
-        formData.append("image", img.file);
-        formData.append("prompt", prompt);
-        formData.append("preset_id", selectedPreset.id);
-        formData.append("count", "4");
+      const analyzeRes = await fetch("/api/analyze-product", {
+        method: "POST",
+        body: analyzeForm,
+      });
+      if (!analyzeRes.ok) {
+        const errData = await analyzeRes.json().catch(() => ({}));
+        throw new Error(errData.error || "제품 분석에 실패했습니다.");
+      }
+      const analysis = await analyzeRes.json();
+      setGeneratedPrompts(analysis.prompts);
 
-        const res = await fetch("/api/generate-image", {
+      // Step 2: 모든 이미지에 같은 프롬프트 적용 (병렬 생성)
+      const genPromises = uploadedImages.map(async (img) => {
+        const genForm = new FormData();
+        genForm.append("image", img.file);
+        genForm.append("prompts", JSON.stringify(analysis.prompts));
+
+        const genRes = await fetch("/api/generate-image", {
           method: "POST",
-          body: formData,
+          body: genForm,
         });
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
+        if (!genRes.ok) {
+          const errData = await genRes.json().catch(() => ({}));
           throw new Error(errData.error || "이미지 생성에 실패했습니다.");
         }
-        const data = await res.json();
-        results.push(
-          ...data.images.map((item: { url: string; id: string }) => ({
-            id: item.id,
-            url: item.url,
-            preset_id: selectedPreset.id,
-            original_image_id: img.id,
-            prompt,
-          }))
-        );
+        const data = await genRes.json();
+        return data.images.map((item: { url: string; id: string; shot_type: string }) => ({
+          id: item.id,
+          url: item.url,
+          shot_type: item.shot_type,
+          original_image_id: img.id,
+          prompt: analysis.prompts.find((p: GeneratedPrompt) => p.shot_type === item.shot_type)?.scene || "",
+        }));
+      });
+
+      const settled = await Promise.allSettled(genPromises);
+      const results: GeneratedImage[] = [];
+      for (const res of settled) {
+        if (res.status === "fulfilled") {
+          results.push(...res.value);
+        }
       }
+
       setGeneratedImages(results);
       if (results.length > 0) {
         setCurrentStep(4);
@@ -301,20 +328,14 @@ export default function Home() {
         </div>
       )}
 
-      {/* Step 2: 연출 설정 (프리셋 + 프롬프트 편집) */}
+      {/* Step 2: 연출 설정 (AI 동적 생성) */}
       {currentStep === 2 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">연출 설정</h2>
           <p className="text-muted-foreground">
-            프리셋을 선택하면 프롬프트가 자동 완성됩니다. 필요하면 직접 수정하세요.
+            원하는 분위기가 있으면 힌트를 입력하세요. 비워두면 AI가 알아서 최적의 연출을 만듭니다.
           </p>
-          <PresetSelector
-            presets={PRESETS}
-            selected={selectedPreset}
-            onSelect={setSelectedPreset}
-            customPrompt={customPrompt}
-            onCustomPromptChange={setCustomPrompt}
-          />
+          <StyleHintInput hint={styleHint} onHintChange={setStyleHint} />
         </div>
       )}
 
