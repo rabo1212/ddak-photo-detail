@@ -105,6 +105,8 @@ const CATEGORY_REQUIREMENTS: Record<string, string> = {
     - 실제 사용 장면 이미지 활용`,
 };
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
     const { copyData, selectedImages, productInfo } = (await req.json()) as {

@@ -24,6 +24,8 @@ const SHOT_TYPES = [
   },
 ];
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.FAL_KEY;
   if (!apiKey) {

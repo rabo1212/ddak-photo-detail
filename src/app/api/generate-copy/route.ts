@@ -49,6 +49,8 @@ const CATEGORY_COPY_RULES: Record<string, string> = {
     - 추상적 표현 대신 구체적 수치와 사례 사용`,
 };
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
     const { productInfo, selectedImages } = (await req.json()) as {

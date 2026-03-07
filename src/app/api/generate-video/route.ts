@@ -5,6 +5,8 @@ import { VIDEO_PROMPTS, type ProductCategory } from "@/lib/types";
 const VEO_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const VEO_MODEL = "veo-3.1-generate-preview";
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -26,7 +28,9 @@ export async function POST(req: NextRequest) {
 
     // 이미지 URL → base64 변환
     let base64Image: string;
+    let mimeType = "image/png";
     if (imageUrl.startsWith("data:")) {
+      mimeType = imageUrl.split(";")[0].split(":")[1] || "image/png";
       base64Image = imageUrl.split(",")[1];
     } else {
       const imgRes = await fetch(imageUrl);
@@ -36,6 +40,7 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+      mimeType = imgRes.headers.get("content-type") || "image/png";
       const buffer = await imgRes.arrayBuffer();
       base64Image = Buffer.from(buffer).toString("base64");
     }
@@ -55,7 +60,7 @@ export async function POST(req: NextRequest) {
           instances: [
             {
               prompt,
-              image: { bytesBase64Encoded: base64Image },
+              image: { bytesBase64Encoded: base64Image, mimeType },
             },
           ],
           parameters: {
