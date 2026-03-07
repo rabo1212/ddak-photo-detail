@@ -36,7 +36,7 @@ export default function StepWizard({
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* 상단 프로그레스 */}
       <div className="sticky top-[57px] z-10 glass border-b border-white/30">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3">

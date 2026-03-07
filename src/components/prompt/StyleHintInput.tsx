@@ -38,13 +38,13 @@ export default function StyleHintInput({ hint, onHintChange }: StyleHintInputPro
   return (
     <div className="space-y-6">
       {/* Info banner */}
-      <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-100 shadow-sm">
-        <Sparkles className="h-5 w-5 text-violet-500 mt-0.5 shrink-0" />
+      <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/10 shadow-sm">
+        <Sparkles className="h-5 w-5 text-primary mt-0.5 shrink-0" />
         <div className="space-y-1">
-          <p className="text-sm font-medium text-violet-900">
+          <p className="text-sm font-medium text-foreground">
             AI가 제품을 분석하여 맞춤 연출을 생성합니다
           </p>
-          <p className="text-xs text-violet-600">
+          <p className="text-xs text-muted-foreground">
             업로드한 사진을 AI가 분석해서 제품에 최적화된 4가지 연출(히어로, 디테일, 라이프스타일, 크리에이티브)을 자동으로 만듭니다.
           </p>
         </div>

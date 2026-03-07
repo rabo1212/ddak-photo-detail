@@ -26,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-mesh min-h-screen`}
       >
         <header className="glass border-b border-white/40 sticky top-0 z-50">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
