@@ -28,14 +28,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
+        <header className="glass border-b border-white/40 sticky top-0 z-50">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-raised">
               <span className="text-primary-foreground font-bold text-sm">D</span>
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-bold text-lg tracking-tight">딱포토</span>
-              <span className="text-xs text-muted-foreground hidden sm:inline">AI 상세페이지 생성기</span>
+            <div className="flex items-baseline gap-2">
+              <span className="font-bold text-lg tracking-tight text-gradient">딱포토</span>
+              <span className="text-[11px] text-muted-foreground font-medium tracking-wide uppercase hidden sm:inline">AI 상세페이지 생성기</span>
             </div>
           </div>
         </header>

@@ -149,7 +149,7 @@ export default function VideoGenerator({
   );
 
   return (
-    <Card>
+    <Card className="shadow-raised">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Video className="h-5 w-5" />
@@ -158,13 +158,13 @@ export default function VideoGenerator({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 소스 이미지 미리보기 */}
-        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
           <Image
             src={heroImage.image.url}
             alt="소스 이미지"
             width={64}
             height={64}
-            className="w-16 h-16 object-cover rounded"
+            className="w-16 h-16 object-cover rounded-xl"
             unoptimized
           />
           <div className="text-sm">
@@ -243,11 +243,11 @@ export default function VideoGenerator({
               muted
               autoPlay
               playsInline
-              className="w-full rounded-lg"
+              className="w-full rounded-xl shadow-raised"
             />
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
               onClick={() => downloadVideo(video.videoUrl!, i)}
             >
               <Download className="h-4 w-4 mr-2" />

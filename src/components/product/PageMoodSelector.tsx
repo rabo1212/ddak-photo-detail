@@ -12,7 +12,7 @@ interface PageMoodSelectorProps {
 
 export default function PageMoodSelector({ selected, onSelect }: PageMoodSelectorProps) {
   return (
-    <Card>
+    <Card className="shadow-raised">
       <CardContent className="p-4 space-y-4">
         <p className="text-sm text-muted-foreground">
           상세페이지의 전체적인 비주얼 분위기를 선택하세요.
@@ -24,7 +24,7 @@ export default function PageMoodSelector({ selected, onSelect }: PageMoodSelecto
               <div
                 key={mood.value}
                 className={cn(
-                  "relative flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all hover:shadow-sm",
+                  "relative flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-raised",
                   isSelected ? "border-primary bg-primary/5" : "border-transparent bg-muted/50 hover:border-muted-foreground/20"
                 )}
                 onClick={() => onSelect(mood.value)}
@@ -39,7 +39,7 @@ export default function PageMoodSelector({ selected, onSelect }: PageMoodSelecto
                   <p className="text-xs text-muted-foreground truncate">{mood.description}</p>
                 </div>
                 {isSelected && (
-                  <div className="bg-primary text-primary-foreground rounded-full p-0.5 shrink-0">
+                  <div className="bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-full p-0.5 shrink-0 shadow-sm">
                     <Check className="h-3 w-3" />
                   </div>
                 )}

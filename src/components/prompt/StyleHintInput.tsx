@@ -38,7 +38,7 @@ export default function StyleHintInput({ hint, onHintChange }: StyleHintInputPro
   return (
     <div className="space-y-6">
       {/* Info banner */}
-      <div className="flex items-start gap-3 p-4 rounded-lg bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-100">
+      <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-100 shadow-sm">
         <Sparkles className="h-5 w-5 text-violet-500 mt-0.5 shrink-0" />
         <div className="space-y-1">
           <p className="text-sm font-medium text-violet-900">
@@ -61,10 +61,10 @@ export default function StyleHintInput({ hint, onHintChange }: StyleHintInputPro
                 key={chip}
                 variant={isActive ? "default" : "outline"}
                 className={cn(
-                  "cursor-pointer transition-all text-sm py-1 px-3",
+                  "cursor-pointer transition-all text-sm py-1 px-3 active:scale-95",
                   isActive
-                    ? "bg-violet-600 hover:bg-violet-700"
-                    : "hover:bg-violet-50 hover:border-violet-300"
+                    ? "bg-gradient-to-r from-primary to-accent hover:opacity-90 border-transparent shadow-sm"
+                    : "hover:bg-primary/5 hover:border-primary/30"
                 )}
                 onClick={() => toggleChip(chip)}
               >

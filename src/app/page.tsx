@@ -308,7 +308,7 @@ export default function Home() {
       isGenerating={isGenerating}
     >
       {error && (
-        <div className="mb-4 bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg flex items-start gap-3">
+        <div className="mb-4 bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl flex items-start gap-3">
           <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
           <p className="text-sm flex-1">{error}</p>
           <button onClick={() => setError(null)} className="shrink-0 hover:opacity-70">
@@ -320,7 +320,7 @@ export default function Home() {
       {/* Step 1: 사진 업로드 */}
       {currentStep === 1 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">누끼 사진 업로드</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">누끼 사진 업로드</h2>
           <p className="text-muted-foreground">
             제품 누끼 사진을 최대 6장 업로드하세요. 정면, 측면, 후면 등 다양한 각도를 권장합니다.
           </p>
@@ -331,7 +331,7 @@ export default function Home() {
       {/* Step 2: 연출 설정 (AI 동적 생성) */}
       {currentStep === 2 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">연출 설정</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">연출 설정</h2>
           <p className="text-muted-foreground">
             원하는 분위기가 있으면 힌트를 입력하세요. 비워두면 AI가 알아서 최적의 연출을 만듭니다.
           </p>
@@ -342,7 +342,7 @@ export default function Home() {
       {/* Step 3: AI 이미지 생성 */}
       {currentStep === 3 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">AI 이미지 생성</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">AI 이미지 생성</h2>
           <p className="text-muted-foreground">
             {isGenerating
               ? "AI가 이미지를 생성하고 있습니다..."
@@ -362,7 +362,7 @@ export default function Home() {
       {/* Step 4: 이미지 선택 */}
       {currentStep === 4 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">이미지 선택</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">이미지 선택</h2>
           <p className="text-muted-foreground">
             상세페이지에 사용할 이미지를 선택하고 역할을 지정하세요.
           </p>
@@ -377,7 +377,7 @@ export default function Home() {
       {/* Step 5: 제품 정보 + 페이지 무드 (탭) */}
       {currentStep === 5 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">제품 정보 & 페이지 설정</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">제품 정보 & 페이지 설정</h2>
           <p className="text-muted-foreground">
             제품 정보를 입력하고, 원하는 상세페이지 무드를 선택하세요.
           </p>
@@ -399,7 +399,7 @@ export default function Home() {
       {/* Step 6: AI 상세페이지 생성 */}
       {currentStep === 6 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">AI 상세페이지 생성</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">AI 상세페이지 생성</h2>
           <p className="text-muted-foreground">
             {isGenerating
               ? "AI가 13섹션 상세페이지를 만들고 있습니다..."
@@ -408,8 +408,8 @@ export default function Home() {
           {isGenerating && (
             <div className="flex flex-col items-center gap-4 py-16">
               <div className="relative">
-                <div className="w-16 h-16 border-4 border-primary/20 rounded-full" />
-                <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin absolute inset-0" />
+                <div className="w-20 h-20 border-4 border-primary/20 rounded-full" />
+                <div className="w-20 h-20 border-4 border-primary border-t-transparent rounded-full animate-spin absolute inset-0" />
               </div>
               <p className="text-sm text-muted-foreground animate-pulse">
                 보통 30초~1분 정도 소요됩니다
@@ -423,7 +423,7 @@ export default function Home() {
       {currentStep === 7 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">미리보기 & 내보내기</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">미리보기 & 내보내기</h2>
             <Button
               variant={editMode ? "default" : "outline"}
               size="sm"

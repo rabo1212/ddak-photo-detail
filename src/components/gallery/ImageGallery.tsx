@@ -74,7 +74,7 @@ export default function ImageGallery({
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="aspect-square bg-gray-200 rounded-lg animate-pulse" />
+          <div key={i} className="aspect-square bg-muted rounded-xl animate-pulse" />
         ))}
       </div>
     );
@@ -94,7 +94,7 @@ export default function ImageGallery({
     <div className="space-y-4">
       {/* 액션 버튼 */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           {selectedImages.length}/{generatedImages.length}장 선택됨
         </p>
         <div className="flex gap-2">
@@ -115,8 +115,8 @@ export default function ImageGallery({
             <div key={img.id} className="space-y-2">
               <div
                 className={cn(
-                  "relative aspect-square rounded-lg overflow-hidden cursor-pointer group border-2 transition-all",
-                  selected ? "border-blue-600 ring-2 ring-blue-200" : "border-transparent hover:border-gray-300"
+                  "relative aspect-square rounded-xl overflow-hidden cursor-pointer group border-2 transition-all duration-200",
+                  selected ? "border-primary ring-2 ring-primary/20 shadow-raised" : "border-transparent hover:border-border hover:shadow-sm"
                 )}
                 onClick={() => toggleSelect(img)}
               >
@@ -129,7 +129,7 @@ export default function ImageGallery({
 
                 {/* 체크 표시 */}
                 {selected && (
-                  <div className="absolute top-2 left-2 bg-blue-600 text-white rounded-full p-1">
+                  <div className="absolute top-2 left-2 bg-gradient-to-br from-primary to-accent text-white rounded-full p-1 shadow-sm">
                     <Check className="h-3 w-3" />
                   </div>
                 )}

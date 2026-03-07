@@ -4,7 +4,7 @@ import { STEP_LABELS, type WizardStep } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 
 interface StepWizardProps {
   currentStep: WizardStep;
@@ -36,15 +36,15 @@ export default function StepWizard({
   };
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-background">
       {/* 상단 프로그레스 */}
-      <div className="sticky top-[57px] z-10 bg-white border-b shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-3">
+      <div className="sticky top-[57px] z-10 glass border-b border-white/30">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3">
           {/* 모바일: 프로그레스 바 */}
           <div className="sm:hidden">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-sm font-medium">{STEP_LABELS[currentStep]}</span>
-              <span className="text-xs text-muted-foreground">{currentStep}/7</span>
+              <span className="text-sm font-semibold">{STEP_LABELS[currentStep]}</span>
+              <span className="text-xs text-muted-foreground font-medium">{currentStep}/7</span>
             </div>
             <Progress value={(currentStep / 7) * 100} className="h-1.5" />
           </div>
@@ -61,19 +61,19 @@ export default function StepWizard({
               <div key={step} className="flex items-center">
                 <div
                   className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
-                    step < currentStep && "bg-primary text-primary-foreground",
-                    step === currentStep && "bg-primary text-primary-foreground ring-4 ring-primary/20",
-                    step > currentStep && "bg-muted text-muted-foreground"
+                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300",
+                    step < currentStep && "bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-sm",
+                    step === currentStep && "bg-gradient-to-br from-primary to-accent text-primary-foreground ring-4 ring-primary/15 shadow-raised scale-110",
+                    step > currentStep && "bg-muted/60 text-muted-foreground/60 border border-border"
                   )}
                 >
-                  {step < currentStep ? "✓" : step}
+                  {step < currentStep ? <Check className="h-3.5 w-3.5" /> : step}
                 </div>
                 {step < 7 && (
                   <div
                     className={cn(
-                      "w-12 lg:w-20 h-0.5 mx-1 transition-colors",
-                      step < currentStep ? "bg-primary" : "bg-muted"
+                      "w-12 lg:w-20 h-0.5 mx-1 transition-all duration-500 rounded-full",
+                      step < currentStep ? "bg-gradient-to-r from-primary to-accent" : "bg-border"
                     )}
                   />
                 )}
@@ -83,7 +83,7 @@ export default function StepWizard({
 
           {/* 현재 단계 이름 (데스크탑) */}
           <p className="hidden sm:block text-center text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">
+            <span className="font-semibold text-foreground">
               {currentStep}/7
             </span>{" "}
             {STEP_LABELS[currentStep]}
@@ -91,21 +91,24 @@ export default function StepWizard({
         </div>
       </div>
 
-      {/* 콘텐츠 — 스텝 전환 애니메이션 */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div key={currentStep} className="animate-in fade-in slide-in-from-right-4 duration-300">
+      {/* 콘텐츠 */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <div key={currentStep} className="animate-in fade-in slide-in-from-bottom-3 duration-500">
           {children}
         </div>
       </div>
 
       {/* 하단 네비게이션 */}
-      <div className="sticky bottom-0 bg-white border-t shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex justify-between">
+      <div className="sticky bottom-0 glass border-t border-white/30">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex justify-between">
           <Button
             variant="outline"
             onClick={onPrev}
             disabled={currentStep === 1}
-            className={cn(currentStep === 1 && "invisible")}
+            className={cn(
+              "rounded-xl transition-all duration-200",
+              currentStep === 1 && "invisible"
+            )}
           >
             이전
           </Button>
@@ -114,6 +117,7 @@ export default function StepWizard({
             onClick={onNext}
             disabled={!canNext || isGenerating}
             size="lg"
+            className="rounded-xl shadow-raised hover:shadow-float transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
           >
             {isGenerating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             {getNextLabel()}

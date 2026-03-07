@@ -65,7 +65,7 @@ export default function ProductInfoForm({ productInfo, onChange }: ProductInfoFo
   };
 
   return (
-    <Card>
+    <Card className="shadow-raised">
       <CardHeader>
         <CardTitle className="text-lg">제품 정보</CardTitle>
       </CardHeader>

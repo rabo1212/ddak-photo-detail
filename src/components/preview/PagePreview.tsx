@@ -14,7 +14,7 @@ export default function PagePreview({ html }: PagePreviewProps) {
 
   if (!html) {
     return (
-      <div className="text-center py-12 text-gray-400">
+      <div className="text-center py-12 text-muted-foreground">
         생성된 페이지가 없습니다.
       </div>
     );
@@ -33,7 +33,7 @@ export default function PagePreview({ html }: PagePreviewProps) {
       {/* iframe 미리보기 */}
       <div className="flex justify-center">
         <div
-          className="border rounded-lg overflow-hidden bg-white shadow-sm transition-all"
+          className="border rounded-2xl overflow-hidden bg-white shadow-float transition-all"
           style={{
             width: viewMode === "desktop" ? 860 : 390,
             maxWidth: "100%",

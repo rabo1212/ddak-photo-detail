@@ -67,18 +67,18 @@ export default function ImageUploader({ images, onImagesChange }: ImageUploaderP
       {images.length < 6 && (
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+          className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 ${
             isDragActive
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-300 hover:border-gray-400"
+              ? "border-primary bg-primary/5 shadow-float scale-[1.01]"
+              : "border-border hover:border-primary/40 hover:bg-primary/[0.02] hover:shadow-raised"
           }`}
         >
           <input {...getInputProps()} />
-          <Upload className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-          <p className="text-gray-600 font-medium">
+          <Upload className="mx-auto h-12 w-12 text-muted-foreground/40 mb-4" />
+          <p className="text-foreground font-semibold text-base">
             {isDragActive ? "여기에 놓으세요!" : "사진을 드래그하거나 클릭해서 업로드"}
           </p>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="text-sm text-muted-foreground mt-2">
             JPG, PNG, WebP / 최대 10MB / {images.length}/6장
           </p>
         </div>
@@ -90,7 +90,7 @@ export default function ImageUploader({ images, onImagesChange }: ImageUploaderP
           {images.map((img) => (
             <div
               key={img.id}
-              className="relative group border rounded-lg overflow-hidden bg-white"
+              className="relative group border rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-raised transition-all duration-200"
             >
               {/* 이미지 */}
               <div className="aspect-square relative">
