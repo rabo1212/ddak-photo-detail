@@ -50,7 +50,7 @@ export default function ImageSwapper({ selectedImages, generatedImages, onSwap }
               variant="ghost"
               size="sm"
               onClick={() => setSwapIndex(i)}
-              className="text-xs h-7"
+              className="text-xs"
             >
               <ArrowLeftRight className="h-3 w-3 mr-1" />
               교체

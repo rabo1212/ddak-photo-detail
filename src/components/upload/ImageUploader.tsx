@@ -106,7 +106,7 @@ export default function ImageUploader({ images, onImagesChange }: ImageUploaderP
                 <Button
                   variant="destructive"
                   size="icon"
-                  className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-2 right-2 h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={() => removeImage(img.id)}
                 >
                   <X className="h-4 w-4" />
@@ -119,7 +119,7 @@ export default function ImageUploader({ images, onImagesChange }: ImageUploaderP
                   value={img.angle}
                   onValueChange={(v) => updateAngle(img.id, v as ImageAngle)}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-9 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

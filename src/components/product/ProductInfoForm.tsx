@@ -149,7 +149,7 @@ export default function ProductInfoForm({ productInfo, onChange }: ProductInfoFo
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">핵심 특장점 (3~5개)</label>
             {productInfo.features.length < 5 && (
-              <Button variant="ghost" size="sm" onClick={addFeature} className="h-7 text-xs">
+              <Button variant="ghost" size="sm" onClick={addFeature} className="text-xs">
                 <Plus className="h-3 w-3 mr-1" /> 추가
               </Button>
             )}

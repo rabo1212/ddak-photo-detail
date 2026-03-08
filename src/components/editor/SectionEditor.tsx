@@ -165,7 +165,7 @@ export default function SectionEditor({ sectionKey, sectionData, onChange }: Sec
                           <Input
                             value={String(subVal)}
                             onChange={(e) => updateArrayItem(key, i, { ...item, [subKey]: e.target.value })}
-                            className="text-sm h-8"
+                            className="text-sm"
                           />
                         </div>
                       );
@@ -191,7 +191,7 @@ export default function SectionEditor({ sectionKey, sectionData, onChange }: Sec
                     <Input
                       value={String(subVal)}
                       onChange={(e) => updateField(key, { ...(value as Record<string, string>), [subKey]: e.target.value })}
-                      className="text-sm h-8"
+                      className="text-sm"
                     />
                   </div>
                 ))}

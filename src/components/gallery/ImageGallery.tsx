@@ -159,7 +159,7 @@ export default function ImageGallery({
                   value={getRole(img.id)}
                   onValueChange={(v) => updateRole(img.id, v as ImageRole)}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-9 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
