@@ -3,6 +3,7 @@ const GEMINI_API_URL =
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 2000;
+const MAX_RETRY_WAIT_MS = 30000; // Retry-After 최대 30초
 
 interface GeminiOptions {
   temperature?: number;
@@ -46,9 +47,10 @@ async function callGeminiBase(prompt: string, options: GeminiOptions = {}, parts
       });
 
       if (res.status === 429 || res.status === 503) {
-        // Rate limit 또는 일시 장애 — 재시도
+        // Rate limit 또는 일시 장애 — 재시도 (최대 30초 대기)
         const retryAfter = res.headers.get("Retry-After");
-        const waitMs = retryAfter ? parseInt(retryAfter) * 1000 : RETRY_DELAY_MS * (attempt + 1);
+        const rawWait = retryAfter ? parseInt(retryAfter) * 1000 : RETRY_DELAY_MS * (attempt + 1);
+        const waitMs = Math.min(rawWait, MAX_RETRY_WAIT_MS);
         console.warn(`[Gemini] ${res.status} 응답, ${waitMs}ms 후 재시도 (${attempt + 1}/${MAX_RETRIES})`);
         await sleep(waitMs);
         continue;
@@ -56,7 +58,11 @@ async function callGeminiBase(prompt: string, options: GeminiOptions = {}, parts
 
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`Gemini API 오류 (${res.status}): ${errText.slice(0, 500)}`);
+        console.error(`[Gemini] ${res.status} error:`, errText.slice(0, 200));
+        if (res.status === 401) throw new Error("API 인증 오류. 관리자에게 문의하세요.");
+        if (res.status === 403) throw new Error("API 접근이 거부되었습니다.");
+        if (res.status >= 500) throw new Error("AI 서버 오류가 발생했습니다. 잠시 후 다시 시도하세요.");
+        throw new Error("AI 요청 처리 중 오류가 발생했습니다.");
       }
 
       const data = await res.json();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import StepWizard from "@/components/wizard/StepWizard";
 import ImageUploader from "@/components/upload/ImageUploader";
 import StyleHintInput from "@/components/prompt/StyleHintInput";
@@ -61,6 +61,8 @@ export default function Home() {
   const [editedCopyData, setEditedCopyData] = useState<CopyData | null>(null);
   const [editedSelectedImages, setEditedSelectedImages] = useState<SelectedImage[]>([]);
   const [isRebuilding, setIsRebuilding] = useState(false);
+  // 비동기 작업 취소용
+  const abortRef = useRef<AbortController | null>(null);
 
   // localStorage 복구 (마운트 시 1회)
   useEffect(() => {
@@ -155,13 +157,21 @@ export default function Home() {
 
   const handlePrev = () => {
     setError(null);
+    // 진행 중인 비동기 작업 취소
+    abortRef.current?.abort();
+    abortRef.current = null;
+    // Step 6/7에서 5 이하로 돌아가면 생성 결과 무효화
+    if (currentStep >= 6 && currentStep - 1 < 6) {
+      setCopyData(null);
+      setPageHtml("");
+    }
     if (currentStep > 1) {
       setCurrentStep((s) => (s - 1) as WizardStep);
     }
   };
 
   const generateImages = async () => {
-    if (uploadedImages.length === 0) return;
+    if (uploadedImages.length === 0 || isGenerating) return;
     setIsGenerating(true);
     setError(null);
     try {
@@ -253,16 +263,21 @@ export default function Home() {
   };
 
   const generatePage = async () => {
-    if (!productInfo.name || selectedImages.length === 0) return;
+    if (!productInfo.name || selectedImages.length === 0 || isGenerating) return;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setIsGenerating(true);
     setError(null);
     try {
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
       const copyRes = await fetch("/api/generate-copy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productInfo, selectedImages }),
-        signal: AbortSignal.timeout(120000),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (!copyRes.ok) {
         if (copyRes.status === 429) throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
         const errData = await copyRes.json().catch(() => ({}));
@@ -278,7 +293,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ copyData: copy, selectedImages, productInfo }),
-        signal: AbortSignal.timeout(120000),
+        signal: controller.signal,
       });
       if (!buildRes.ok) {
         const errData = await buildRes.json().catch(() => ({}));
@@ -288,6 +303,10 @@ export default function Home() {
       setPageHtml(html);
       setCurrentStep(7);
     } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        // 사용자가 이전 단계로 돌아가서 취소됨 — 에러 표시 안 함
+        return;
+      }
       if (err instanceof DOMException && err.name === "TimeoutError") {
         setError("요청 시간이 초과되었습니다. 다시 시도해주세요.");
       } else if (err instanceof TypeError && err.message.includes("fetch")) {

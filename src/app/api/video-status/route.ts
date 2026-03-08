@@ -37,6 +37,14 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
 
     if (data.done) {
+      // 에러 응답 우선 체크
+      if (data.error) {
+        return NextResponse.json({
+          status: "failed",
+          error: data.error.message || "영상 생성에 실패했습니다.",
+        });
+      }
+
       // 완료: 영상 URL 추출
       // 실제 응답 구조: response.generateVideoResponse.generatedSamples[0].video.uri
       const samples = data.response?.generateVideoResponse?.generatedSamples || [];
