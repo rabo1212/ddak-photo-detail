@@ -3,6 +3,23 @@ import { callGeminiPrecise, extractHtml } from "@/lib/gemini";
 import { PAGE_MOODS } from "@/lib/types";
 import type { CopyData, SelectedImage, ProductInfo } from "@/lib/types";
 
+// 사용자 입력 정제 (프롬프트 인젝션 + XSS 방어)
+function sanitizeInput(input: string): string {
+  return input
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// 생성된 HTML에서 위험한 태그 제거
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, "")
+    .replace(/\bon\w+\s*=\s*["'][^"']*["']/gi, "");
+}
+
 // ── 무드별 디자인 디렉션 (Hex 코드 고정으로 AI 일관성 확보) ──
 const MOOD_DESIGN_DIRECTIONS: Record<string, string> = {
   "minimal-white": `
@@ -145,15 +162,18 @@ export async function POST(req: NextRequest) {
     };
     const maxWidth = channelWidth[productInfo.channel] || 860;
 
+    const safeName = sanitizeInput(productInfo.name);
+    const safeTarget = sanitizeInput(productInfo.target || "일반 소비자");
+
     const prompt = `당신은 한국 탑 이커머스 상세페이지 디자이너입니다.
 월 매출 1억 이상 셀러들의 상세페이지를 만들어온 15년차 전문가로서,
 "AI가 만들었다는 티가 절대 나지 않는" 프로페셔널한 상세페이지를 만드세요.
 
 ═══════════════════════════════════════
-제품: ${productInfo.name}
+제품: ${safeName}
 카테고리: ${productInfo.category}
 채널: ${productInfo.channel} (가로 ${maxWidth}px)
-타겟: ${productInfo.target || "일반 소비자"}
+타겟: ${safeTarget}
 톤앤매너: ${productInfo.tone}
 ═══════════════════════════════════════
 
@@ -283,15 +303,18 @@ ${JSON.stringify(copyData, null, 2)}
 완성된 HTML 코드만 출력하세요. <!DOCTYPE html>부터 </html>까지만.`;
 
     const result = await callGeminiPrecise(prompt);
-    const html = extractHtml(result);
+    const rawHtml = extractHtml(result);
 
-    if (!html || (!html.includes("<!DOCTYPE") && !html.includes("<html"))) {
-      console.error("[build-page] 유효하지 않은 HTML 반환:", html.slice(0, 200));
+    if (!rawHtml || (!rawHtml.includes("<!DOCTYPE") && !rawHtml.includes("<html"))) {
+      console.error("[build-page] 유효하지 않은 HTML 반환:", rawHtml.slice(0, 200));
       return NextResponse.json(
         { error: "HTML 생성에 실패했습니다. 다시 시도해주세요." },
         { status: 500 }
       );
     }
+
+    // 위험한 태그 제거 (script, iframe, inline event handlers)
+    const html = sanitizeHtml(rawHtml);
 
     return NextResponse.json({ html });
   } catch (err) {

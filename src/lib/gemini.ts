@@ -60,12 +60,21 @@ async function callGeminiBase(prompt: string, options: GeminiOptions = {}, parts
       }
 
       const data = await res.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+      // API 에러 응답 체크
+      if (data.error) {
+        throw new Error(`Gemini API 에러: ${data.error.message || "알 수 없는 오류"}`);
+      }
+
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
       if (!text) {
-        const finishReason = data.candidates?.[0]?.finishReason;
+        const finishReason = data?.candidates?.[0]?.finishReason || "unknown";
         console.warn(`[Gemini] 빈 응답. finishReason: ${finishReason}`);
-        throw new Error(`Gemini가 빈 응답을 반환했습니다. (finishReason: ${finishReason})`);
+        if (finishReason === "SAFETY") {
+          throw new Error("콘텐츠 정책 위반으로 생성할 수 없습니다.");
+        }
+        throw new Error("Gemini API가 유효한 응답을 반환하지 않았습니다.");
       }
 
       return text;

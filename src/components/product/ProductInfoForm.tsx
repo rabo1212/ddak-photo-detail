@@ -77,7 +77,8 @@ export default function ProductInfoForm({ productInfo, onChange }: ProductInfoFo
             id="product-name"
             placeholder="예: 수분 세럼 30ml"
             value={productInfo.name}
-            onChange={(e) => update("name", e.target.value)}
+            onChange={(e) => update("name", e.target.value.slice(0, 100))}
+            maxLength={100}
             aria-required="true"
           />
         </div>
@@ -116,7 +117,8 @@ export default function ProductInfoForm({ productInfo, onChange }: ProductInfoFo
               id="product-price"
               placeholder="예: 29,900원"
               value={productInfo.price}
-              onChange={(e) => update("price", e.target.value)}
+              onChange={(e) => update("price", e.target.value.slice(0, 50))}
+              maxLength={50}
             />
           </div>
           <div className="space-y-1.5">
@@ -139,9 +141,11 @@ export default function ProductInfoForm({ productInfo, onChange }: ProductInfoFo
             id="product-target"
             placeholder="예: 20~30대 여성, 건조한 피부 고민이 있는 직장인"
             value={productInfo.target}
-            onChange={(e) => update("target", e.target.value)}
+            onChange={(e) => update("target", e.target.value.slice(0, 500))}
             rows={2}
+            maxLength={500}
           />
+          <p className="text-xs text-muted-foreground text-right">{productInfo.target.length}/500</p>
         </div>
 
         {/* 핵심 특장점 */}
@@ -161,7 +165,7 @@ export default function ProductInfoForm({ productInfo, onChange }: ProductInfoFo
                   id={`feature-${i}`}
                   placeholder={`특장점 ${i + 1}`}
                   value={feature}
-                  onChange={(e) => updateFeature(i, e.target.value)}
+                  onChange={(e) => updateFeature(i, e.target.value.slice(0, 200))}
                   aria-label={`특장점 ${i + 1}`}
                 />
                 {productInfo.features.length > 1 && (

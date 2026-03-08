@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { v4 as uuid } from "uuid";
 import type { UploadedImage, ImageAngle } from "@/lib/types";
@@ -29,6 +29,15 @@ const ANGLE_OPTIONS: { value: ImageAngle; label: string }[] = [
 ];
 
 export default function ImageUploader({ images, onImagesChange }: ImageUploaderProps) {
+  // 컴포넌트 언마운트 시 Object URL 해제 (메모리 누수 방지)
+  const prevUrlsRef = useRef<string[]>([]);
+  useEffect(() => {
+    prevUrlsRef.current = images.map((img) => img.preview);
+    return () => {
+      prevUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const onDrop = useCallback(
     (files: File[]) => {
       const remaining = 6 - images.length;

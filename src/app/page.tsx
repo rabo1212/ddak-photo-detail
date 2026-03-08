@@ -81,22 +81,32 @@ export default function Home() {
     }
   }, []);
 
-  // localStorage 저장 (상태 변경 시)
+  // localStorage 저장 (상태 변경 시) — 용량 초과 방어
   useEffect(() => {
-    const state = {
-      currentStep,
-      styleHint,
-      generatedPrompts,
-      generatedImages,
-      selectedImages,
-      productInfo,
-      copyData,
-      pageHtml,
-    };
     try {
+      const state = {
+        currentStep,
+        styleHint,
+        generatedPrompts,
+        // 이미지 URL이 많으면 용량 초과 → 20개 제한
+        generatedImages: generatedImages.slice(0, 20),
+        selectedImages,
+        productInfo,
+        copyData,
+        // HTML은 50KB 제한
+        pageHtml: pageHtml ? pageHtml.slice(0, 50000) : "",
+      };
       localStorage.setItem("ddak-state", JSON.stringify(state));
-    } catch {
-      // 용량 초과 시 무시
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "QuotaExceededError") {
+        // 용량 초과 시 이미지/HTML 제외하고 저장
+        try {
+          const minState = { currentStep, styleHint, generatedPrompts, productInfo };
+          localStorage.setItem("ddak-state", JSON.stringify(minState));
+        } catch {
+          // 그래도 실패하면 무시
+        }
+      }
     }
   }, [currentStep, styleHint, generatedPrompts, generatedImages, selectedImages, productInfo, copyData, pageHtml]);
 
@@ -111,7 +121,7 @@ export default function Home() {
       case 4:
         return selectedImages.length > 0;
       case 5:
-        return productInfo.name.trim() !== "";
+        return productInfo.name.trim() !== "" && productInfo.category !== "etc";
       case 6:
         return pageHtml !== "" || (productInfo.name.trim() !== "" && selectedImages.length > 0);
       case 7:
@@ -166,8 +176,11 @@ export default function Home() {
       const analyzeRes = await fetch("/api/analyze-product", {
         method: "POST",
         body: analyzeForm,
+        signal: AbortSignal.timeout(60000),
       });
       if (!analyzeRes.ok) {
+        if (analyzeRes.status === 429) throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
+        if (analyzeRes.status >= 500) throw new Error("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         const errData = await analyzeRes.json().catch(() => ({}));
         throw new Error(errData.error || "제품 분석에 실패했습니다.");
       }
@@ -189,29 +202,51 @@ export default function Home() {
           throw new Error(errData.error || "이미지 생성에 실패했습니다.");
         }
         const data = await genRes.json();
+        if (!Array.isArray(data?.images)) {
+          throw new Error("이미지 생성 응답 형식이 올바르지 않습니다.");
+        }
         return data.images.map((item: { url: string; id: string; shot_type: string }) => ({
           id: item.id,
           url: item.url,
           shot_type: item.shot_type,
           original_image_id: img.id,
-          prompt: analysis.prompts.find((p: GeneratedPrompt) => p.shot_type === item.shot_type)?.scene || "",
+          prompt: (analysis?.prompts || []).find((p: GeneratedPrompt) => p.shot_type === item.shot_type)?.scene || "",
         }));
       });
 
       const settled = await Promise.allSettled(genPromises);
       const results: GeneratedImage[] = [];
-      for (const res of settled) {
+      const failures: string[] = [];
+
+      for (let i = 0; i < settled.length; i++) {
+        const res = settled[i];
         if (res.status === "fulfilled") {
           results.push(...res.value);
+        } else {
+          failures.push(`이미지 ${i + 1}`);
         }
       }
 
       setGeneratedImages(results);
-      if (results.length > 0) {
-        setCurrentStep(4);
+
+      if (results.length === 0) {
+        setError("모든 이미지 생성에 실패했습니다. 다시 시도해주세요.");
+        return;
       }
+
+      if (failures.length > 0) {
+        setError(`${failures.join(", ")} 생성 실패. 성공한 이미지로 진행합니다.`);
+      }
+
+      setCurrentStep(4);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "이미지 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+      if (err instanceof DOMException && err.name === "TimeoutError") {
+        setError("요청 시간이 초과되었습니다. 다시 시도해주세요.");
+      } else if (err instanceof TypeError && err.message.includes("fetch")) {
+        setError("네트워크 연결을 확인해주세요.");
+      } else {
+        setError(err instanceof Error ? err.message : "이미지 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -226,18 +261,24 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productInfo, selectedImages }),
+        signal: AbortSignal.timeout(120000),
       });
       if (!copyRes.ok) {
+        if (copyRes.status === 429) throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
         const errData = await copyRes.json().catch(() => ({}));
         throw new Error(errData.error || "카피 생성에 실패했습니다.");
       }
-      const copy: CopyData = await copyRes.json();
+      const copy = await copyRes.json() as CopyData;
+      if (!copy?.sections) {
+        throw new Error("카피 데이터 구조가 올바르지 않습니다. 다시 시도해주세요.");
+      }
       setCopyData(copy);
 
       const buildRes = await fetch("/api/build-page", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ copyData: copy, selectedImages, productInfo }),
+        signal: AbortSignal.timeout(120000),
       });
       if (!buildRes.ok) {
         const errData = await buildRes.json().catch(() => ({}));
@@ -247,7 +288,13 @@ export default function Home() {
       setPageHtml(html);
       setCurrentStep(7);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "상세페이지 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+      if (err instanceof DOMException && err.name === "TimeoutError") {
+        setError("요청 시간이 초과되었습니다. 다시 시도해주세요.");
+      } else if (err instanceof TypeError && err.message.includes("fetch")) {
+        setError("네트워크 연결을 확인해주세요.");
+      } else {
+        setError(err instanceof Error ? err.message : "상세페이지 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+      }
     } finally {
       setIsGenerating(false);
     }

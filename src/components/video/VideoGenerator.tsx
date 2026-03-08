@@ -25,19 +25,20 @@ export default function VideoGenerator({
   const [isRequesting, setIsRequesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const videoGenRef = useRef(videoGenerations);
+  videoGenRef.current = videoGenerations;
 
   // hero 이미지 찾기 (없으면 첫 번째 이미지)
   const heroImage =
     selectedImages.find((si) => si.role === "hero") || selectedImages[0];
 
-  // 폴링: generating 상태인 영상들의 상태 확인
+  // 폴링: generating 상태인 영상들의 상태 확인 (ref로 최신 상태 참조)
   const pollStatus = useCallback(async () => {
-    const generating = videoGenerations.filter(
-      (v) => v.status === "generating"
-    );
+    const current = videoGenRef.current;
+    const generating = current.filter((v) => v.status === "generating");
     if (generating.length === 0) return;
 
-    const updated = [...videoGenerations];
+    const updated = current.map((v) => ({ ...v }));
     let changed = false;
 
     for (const video of generating) {
@@ -46,17 +47,20 @@ export default function VideoGenerator({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ operationName: video.operationName }),
+          signal: AbortSignal.timeout(10000),
         });
         const data = await res.json();
 
-        const idx = updated.findIndex((v) => v.id === video.id);
-        if (idx === -1) continue;
+        const target = updated.find((v) => v.id === video.id);
+        if (!target) continue;
 
         if (data.status === "completed" && data.videoUrl) {
-          updated[idx] = { ...updated[idx], status: "completed", videoUrl: data.videoUrl };
+          target.status = "completed";
+          target.videoUrl = data.videoUrl;
           changed = true;
         } else if (data.status === "failed" || data.error) {
-          updated[idx] = { ...updated[idx], status: "failed", error: data.error || "영상 생성에 실패했습니다." };
+          target.status = "failed";
+          target.error = data.error || "영상 생성에 실패했습니다.";
           changed = true;
         }
       } catch {
@@ -67,16 +71,19 @@ export default function VideoGenerator({
     if (changed) {
       onVideoGenerationsChange(updated);
     }
-  }, [videoGenerations, onVideoGenerationsChange]);
+  }, [onVideoGenerationsChange]);
 
-  // 폴링 시작/정지
+  // 폴링 시작/정지 — videoGenerations 변경 시만 재평가
   useEffect(() => {
     const hasGenerating = videoGenerations.some(
       (v) => v.status === "generating"
     );
 
-    if (hasGenerating) {
+    if (hasGenerating && !pollingRef.current) {
       pollingRef.current = setInterval(pollStatus, POLL_INTERVAL);
+    } else if (!hasGenerating && pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
     }
 
     return () => {
