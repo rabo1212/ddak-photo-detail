@@ -34,12 +34,13 @@ export default function ExportOptions({ html, productName }: ExportOptionsProps)
   if (!html) return null;
 
   return (
-    <Card className="shadow-raised">
+    <Card className="card-premium shadow-raised overflow-hidden">
+      <div className="h-1 progress-gradient" />
       <CardHeader>
         <CardTitle className="text-lg">내보내기</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <Button onClick={downloadHtml} className="w-full hover:scale-[1.01] active:scale-[0.99] transition-all duration-200" size="lg">
+        <Button onClick={downloadHtml} className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:shadow-glow hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 text-white" size="lg">
           <Download className="h-4 w-4 mr-2" />
           HTML 파일 다운로드
         </Button>

@@ -149,7 +149,7 @@ export default function VideoGenerator({
   );
 
   return (
-    <Card className="shadow-raised">
+    <Card className="card-premium shadow-raised">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Video className="h-5 w-5" />

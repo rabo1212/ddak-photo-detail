@@ -61,7 +61,7 @@ export default function StyleHintInput({ hint, onHintChange }: StyleHintInputPro
                 key={chip}
                 variant={isActive ? "default" : "outline"}
                 className={cn(
-                  "cursor-pointer transition-all text-sm py-1 px-3 active:scale-95",
+                  "cursor-pointer transition-all text-sm py-1 px-3 active:scale-95 hover:-translate-y-0.5",
                   isActive
                     ? "bg-gradient-to-r from-primary to-accent hover:opacity-90 border-transparent shadow-sm"
                     : "hover:bg-primary/5 hover:border-primary/30"

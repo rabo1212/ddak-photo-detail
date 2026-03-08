@@ -74,7 +74,7 @@ export default function ImageGallery({
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="aspect-square bg-muted rounded-xl animate-pulse" />
+          <div key={i} className="aspect-square rounded-2xl shimmer" />
         ))}
       </div>
     );
@@ -82,9 +82,11 @@ export default function ImageGallery({
 
   if (generatedImages.length === 0) {
     return (
-      <div className="text-center py-16 text-muted-foreground">
-        <ImageIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
-        <p className="font-medium">아직 생성된 이미지가 없습니다</p>
+      <div className="text-center py-20 text-muted-foreground">
+        <div className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+          <ImageIcon className="h-10 w-10 text-primary/40" />
+        </div>
+        <p className="font-bold text-foreground">아직 생성된 이미지가 없습니다</p>
         <p className="text-sm mt-1">이전 단계에서 프리셋을 선택한 뒤 생성해주세요</p>
       </div>
     );
@@ -94,9 +96,9 @@ export default function ImageGallery({
     <div className="space-y-4">
       {/* 액션 버튼 */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {selectedImages.length}/{generatedImages.length}장 선택됨
-        </p>
+        <span className="text-sm font-medium bg-gradient-to-r from-primary to-accent text-white rounded-full px-3 py-1">
+          {selectedImages.length}/{generatedImages.length}장 선택
+        </span>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={selectAll}>
             전체 선택
@@ -115,8 +117,8 @@ export default function ImageGallery({
             <div key={img.id} className="space-y-2">
               <div
                 className={cn(
-                  "relative aspect-square rounded-xl overflow-hidden cursor-pointer group border-2 transition-all duration-200",
-                  selected ? "border-primary ring-2 ring-primary/20 shadow-raised" : "border-transparent hover:border-border hover:shadow-sm"
+                  "relative aspect-square rounded-2xl overflow-hidden cursor-pointer group border-2 transition-all duration-300",
+                  selected ? "border-primary glow-soft shadow-raised" : "border-transparent hover:border-border hover:shadow-raised hover:-translate-y-1"
                 )}
                 onClick={() => toggleSelect(img)}
               >
@@ -129,8 +131,8 @@ export default function ImageGallery({
 
                 {/* 체크 표시 */}
                 {selected && (
-                  <div className="absolute top-2 left-2 bg-gradient-to-br from-primary to-accent text-white rounded-full p-1 shadow-sm">
-                    <Check className="h-3 w-3" />
+                  <div className="absolute top-2 left-2 bg-gradient-to-br from-primary to-accent text-white rounded-full p-1.5 shadow-sm animate-check-pop">
+                    <Check className="h-3.5 w-3.5" />
                   </div>
                 )}
 
