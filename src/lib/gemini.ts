@@ -1,9 +1,9 @@
 const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent";
 
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 1;
 const RETRY_DELAY_MS = 2000;
-const MAX_RETRY_WAIT_MS = 30000; // Retry-After 최대 30초
+const MAX_RETRY_WAIT_MS = 10000; // Retry-After 최대 10초
 
 interface GeminiOptions {
   temperature?: number;
@@ -16,6 +16,14 @@ async function sleep(ms: number) {
 }
 
 type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
+
+/** 재시도 불가능한 에러를 구분하기 위한 클래스 */
+class GeminiFatalError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "GeminiFatalError";
+  }
+}
 
 async function callGeminiBase(prompt: string, options: GeminiOptions = {}, parts?: GeminiPart[]): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -47,7 +55,7 @@ async function callGeminiBase(prompt: string, options: GeminiOptions = {}, parts
       });
 
       if (res.status === 429 || res.status === 503) {
-        // Rate limit 또는 일시 장애 — 재시도 (최대 30초 대기)
+        // Rate limit 또는 일시 장애 — 재시도 (최대 10초 대기)
         const retryAfter = res.headers.get("Retry-After");
         const rawWait = retryAfter ? parseInt(retryAfter) * 1000 : RETRY_DELAY_MS * (attempt + 1);
         const waitMs = Math.min(rawWait, MAX_RETRY_WAIT_MS);
@@ -59,17 +67,18 @@ async function callGeminiBase(prompt: string, options: GeminiOptions = {}, parts
       if (!res.ok) {
         const errText = await res.text();
         console.error(`[Gemini] ${res.status} error:`, errText.slice(0, 200));
-        if (res.status === 401) throw new Error("API 인증 오류. 관리자에게 문의하세요.");
-        if (res.status === 403) throw new Error("API 접근이 거부되었습니다.");
-        if (res.status >= 500) throw new Error("AI 서버 오류가 발생했습니다. 잠시 후 다시 시도하세요.");
-        throw new Error("AI 요청 처리 중 오류가 발생했습니다.");
+        // 재시도해도 의미 없는 에러 → 즉시 중단
+        if (res.status === 401) throw new GeminiFatalError("API 인증 오류. 관리자에게 문의하세요.");
+        if (res.status === 403) throw new GeminiFatalError("API 접근이 거부되었습니다.");
+        if (res.status >= 500) throw new GeminiFatalError("AI 서버 오류가 발생했습니다. 잠시 후 다시 시도하세요.");
+        throw new GeminiFatalError("AI 요청 처리 중 오류가 발생했습니다.");
       }
 
       const data = await res.json();
 
       // API 에러 응답 체크
       if (data.error) {
-        throw new Error(`Gemini API 에러: ${data.error.message || "알 수 없는 오류"}`);
+        throw new GeminiFatalError(`Gemini API 에러: ${data.error.message || "알 수 없는 오류"}`);
       }
 
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -78,13 +87,16 @@ async function callGeminiBase(prompt: string, options: GeminiOptions = {}, parts
         const finishReason = data?.candidates?.[0]?.finishReason || "unknown";
         console.warn(`[Gemini] 빈 응답. finishReason: ${finishReason}`);
         if (finishReason === "SAFETY") {
-          throw new Error("콘텐츠 정책 위반으로 생성할 수 없습니다.");
+          throw new GeminiFatalError("콘텐츠 정책 위반으로 생성할 수 없습니다.");
         }
         throw new Error("Gemini API가 유효한 응답을 반환하지 않았습니다.");
       }
 
       return text;
     } catch (err) {
+      // 재시도 불가 에러는 즉시 throw
+      if (err instanceof GeminiFatalError) throw err;
+
       lastError = err instanceof Error ? err : new Error(String(err));
       if (attempt < MAX_RETRIES) {
         console.warn(`[Gemini] 오류 발생, 재시도 ${attempt + 1}/${MAX_RETRIES}:`, lastError.message);

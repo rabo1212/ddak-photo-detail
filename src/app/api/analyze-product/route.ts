@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callGeminiVision, extractJson } from "@/lib/gemini";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 const SYSTEM_PROMPT = `You are a world-class commercial product photographer and creative director.
 
