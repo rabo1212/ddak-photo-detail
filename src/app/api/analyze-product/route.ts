@@ -3,49 +3,71 @@ import { callGeminiVision, extractJson } from "@/lib/gemini";
 
 export const maxDuration = 60;
 
-const SYSTEM_PROMPT = `You are a world-class commercial product photographer and creative director.
+const SHOT_TYPE_DIRECTIONS: Record<string, string> = {
+  studio: "Clean, minimal background surface with professional studio lighting. Solid or subtly textured backdrop, generous empty space around center where the product will be placed.",
+  detail: "Tight, close-up background surface showing rich material texture. Shallow depth-of-field blur in the back, sharp surface detail in the foreground area.",
+  lifestyle: "Environmental scene suggesting natural use context — a room, table, or outdoor setting. Include contextual props (plants, books, fabric, utensils) arranged around an empty center spot.",
+  ingredient: "Background scene featuring raw materials, natural ingredients, or source elements arranged decoratively. Leave a clear central area empty for the product to be composited onto.",
+  creative: "Dramatic or artistic background with bold lighting, vivid colors, or unexpected textures. Editorial magazine feel — striking and memorable atmosphere.",
+};
 
-TASK: Analyze the product in this nukkei (cutout) photo, then create 4 completely different photographic direction prompts for FLUX Kontext Pro AI image generation.
+function buildSystemPrompt(shotTypes: string[]): string {
+  const promptCount = shotTypes.length;
+  const shotTypeDescriptions = shotTypes
+    .map((st, i) => `- Prompt ${i + 1} (${st.toUpperCase()}): ${SHOT_TYPE_DIRECTIONS[st] || st}`)
+    .join("\n");
+  const jsonPrompts = shotTypes
+    .map((st) => `    { "shot_type": "${st}", "scene": string, "rationale_ko": string }`)
+    .join(",\n");
 
-PRODUCT ANALYSIS:
+  return `You are a world-class commercial product photographer and set designer.
+
+TASK: Analyze the product in this nukkei (cutout) photo, then create ${promptCount} BACKGROUND SCENE prompts for FLUX Fill inpainting.
+
+HOW THIS WORKS:
+1. The product cutout (with transparent background) already exists
+2. FLUX Fill will ONLY generate the background/scene using your prompt
+3. The product will be composited on top UNCHANGED afterward
+4. Your prompts must describe ONLY what goes BEHIND and AROUND the product — never the product itself
+
+PRODUCT ANALYSIS (use this to choose complementary backgrounds):
 Look at the image carefully. Identify:
-- What the product is (be specific)
-- Materials, textures, colors visible
+- What the product is (category, type)
+- Colors and materials visible on the product
 - Approximate size/scale
-- Most likely target market and use context
+- Target market and use context
+Then choose backgrounds that COMPLEMENT the product's colors and material. Example: a warm-toned skincare bottle → cool marble or fresh green botanical backdrop for contrast.
 
-PROMPT REQUIREMENTS (for each of the 4 prompts):
-Each prompt MUST be a single English paragraph (80-120 words) containing ALL of these elements:
-1. SURFACE: What the product is placed on (specific material: "honed Carrara marble slab", not just "marble")
-2. BACKGROUND: Detailed scene description with depth layers (foreground props, mid-ground, background blur)
-3. LIGHTING: Specific setup with equipment names (e.g., "large octabox key light at 45 degrees camera-left, white v-flat fill")
-4. CAMERA: Exact specs (e.g., "Sony A7R V, 90mm f/2.8 macro, ISO 100, 1/125s")
-5. COLOR: Color temperature in Kelvin + grading style (e.g., "5200K daylight balanced, desaturated warm tones like Kodak Portra 160")
-6. COMPOSITION: Specific framing instruction (e.g., "rule of thirds with product at right intersection, 40% negative space left for text")
-7. QUALITY: End with "Ultra-detailed commercial photography, photorealistic, no AI artifacts, subtle film grain"
+PROMPT RULES — WHAT TO DESCRIBE:
+Each prompt is a single English paragraph (80-120 words) covering:
+1. SURFACE: Specific material the scene is built on ("honed Carrara marble slab", "warm walnut wood table", not just "marble" or "wood")
+2. SCENE ELEMENTS: Props, objects, and environmental details AROUND where the product will sit. Describe foreground, mid-ground, and background layers.
+3. LIGHTING: Direction, quality, and color of light ("soft window light from camera-left, warm 3200K", "overhead softbox with white bounce fill")
+4. COLOR MOOD: Overall color palette and grading feel ("desaturated warm tones", "cool blue-grey with golden accents")
+5. End with: "Empty center area for product placement. Ultra-detailed commercial photography, photorealistic."
 
-DIVERSITY RULES (CRITICAL - this is the most important requirement):
-The 4 prompts MUST maximize variety across ALL dimensions. Each prompt must use COMPLETELY DIFFERENT lighting direction, color temperature, surface material, camera angle, and mood.
-- Prompt 1 (HERO): Wide/medium shot, clean studio or editorial setting, product-centric, generous negative space for banner use
-- Prompt 2 (DETAIL): Extreme macro/close-up, f/1.4-2.8 shallow DOF, texture and material focus, intimate perspective
-- Prompt 3 (LIFESTYLE): Environmental scene showing product in natural use context, storytelling, warm lived-in atmosphere with contextual props
-- Prompt 4 (CREATIVE): Unexpected angle, dramatic or artistic lighting, editorial/magazine style, bold and memorable
+PROMPT RULES — WHAT TO NEVER DO:
+- NEVER mention, describe, or name the product in any prompt
+- NEVER add text, typography, logos, labels, or watermarks
+- NEVER add decorative stickers, stamps, badges, or overlays
+- NEVER describe the product's shape, color, or material as part of the scene
+- NEVER use words like "product", "bottle", "box", "package" in the scene description
 
-Never repeat the same background concept, prop, lighting setup, or color palette between prompts.
-Be wildly creative and specific. Avoid generic descriptions. Each scene should feel like it was art-directed for a high-end campaign.
+SHOT DIRECTIONS (${promptCount} background scenes):
+${shotTypeDescriptions}
+
+DIVERSITY: Each background must use completely different surface material, color palette, lighting direction, and mood. No repeats.
 
 Return JSON with this exact structure:
 {
   "product": { "name": string, "category": string, "material": string, "colors": string[] },
   "prompts": [
-    { "shot_type": "hero", "scene": string, "rationale_ko": string },
-    { "shot_type": "detail", "scene": string, "rationale_ko": string },
-    { "shot_type": "lifestyle", "scene": string, "rationale_ko": string },
-    { "shot_type": "creative", "scene": string, "rationale_ko": string }
+${jsonPrompts}
   ]
 }
 
-rationale_ko is a short Korean explanation (1 sentence) of what this shot achieves.`;
+rationale_ko: 1-sentence Korean explanation of why this background works for this product.`;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -69,10 +91,20 @@ export async function POST(req: NextRequest) {
     const base64 = Buffer.from(buffer).toString("base64");
     const mimeType = imageFile.type || "image/png";
 
-    // Build prompt with optional hint
-    let prompt = SYSTEM_PROMPT;
+    // 동적 샷타입
+    const shotTypesRaw = formData.get("shotTypes") as string;
+    let shotTypes: string[] = ["studio", "detail", "lifestyle", "creative"];
+    if (shotTypesRaw) {
+      try {
+        const parsed = JSON.parse(shotTypesRaw);
+        if (Array.isArray(parsed) && parsed.length > 0) shotTypes = parsed;
+      } catch { /* default */ }
+    }
+
+    // Build prompt with shot types and optional hint
+    let prompt = buildSystemPrompt(shotTypes);
     if (hint.trim()) {
-      prompt += `\n\nUSER STYLE DIRECTION: "${hint.trim()}". Incorporate this mood/direction into all 4 prompts while maintaining maximum diversity between them. Let this hint strongly influence the overall atmosphere, color choices, and styling direction.`;
+      prompt += `\n\nUSER STYLE DIRECTION (MUST follow these selections):\n${hint.trim()}\n\nIf SCENE THEMES are specified above, you MUST use those exact surface/environment types in your prompts. Distribute them across the prompts — each prompt should use a different theme if multiple are selected. If CUSTOM DIRECTION is specified, apply those preferences (position, props, mood) across all prompts.`;
     }
 
     const raw = await callGeminiVision(prompt, base64, mimeType);
@@ -80,7 +112,7 @@ export async function POST(req: NextRequest) {
     const result = JSON.parse(jsonStr);
 
     // Validate structure
-    if (!result.product || !result.prompts || result.prompts.length < 4) {
+    if (!result.product || !result.prompts || result.prompts.length < 1) {
       throw new Error("Gemini 응답 구조가 올바르지 않습니다.");
     }
 

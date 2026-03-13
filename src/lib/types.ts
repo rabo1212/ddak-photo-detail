@@ -19,6 +19,19 @@ export interface UploadedImage {
   file: File;
   preview: string; // object URL
   angle: ImageAngle;
+  // BiRefNet 배경 제거 결과
+  foregroundUrl?: string;  // 투명 PNG (fal.ai hosted URL)
+  maskUrl?: string;        // 반전 마스크 (white=배경, base64 data URL)
+  bgRemovalStatus?: "pending" | "done" | "error";
+}
+
+// === 샷타입 (연출 방향) ===
+export type ShotType = "studio" | "detail" | "lifestyle" | "ingredient" | "creative";
+
+export interface CustomDirection {
+  position?: string;  // 배치
+  props?: string;     // 소품
+  mood?: string;      // 분위기
 }
 
 // === 프리셋 ===

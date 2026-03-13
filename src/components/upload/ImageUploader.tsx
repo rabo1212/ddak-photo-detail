@@ -12,11 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { X, Upload } from "lucide-react";
+import { X, Upload, Loader2, Check, AlertCircle, RotateCw } from "lucide-react";
 
 interface ImageUploaderProps {
   images: UploadedImage[];
   onImagesChange: (images: UploadedImage[]) => void;
+  onBgRemoval?: (imageId: string, file: File) => void;
 }
 
 const ANGLE_OPTIONS: { value: ImageAngle; label: string }[] = [
@@ -28,7 +29,7 @@ const ANGLE_OPTIONS: { value: ImageAngle; label: string }[] = [
   { value: "bottom", label: "아랫면" },
 ];
 
-export default function ImageUploader({ images, onImagesChange }: ImageUploaderProps) {
+export default function ImageUploader({ images, onImagesChange, onBgRemoval }: ImageUploaderProps) {
   // 컴포넌트 언마운트 시 Object URL 해제 (메모리 누수 방지)
   const prevUrlsRef = useRef<string[]>([]);
   useEffect(() => {
@@ -47,10 +48,15 @@ export default function ImageUploader({ images, onImagesChange }: ImageUploaderP
         file,
         preview: URL.createObjectURL(file),
         angle: "front" as ImageAngle,
+        bgRemovalStatus: "pending" as const,
       }));
       onImagesChange([...images, ...newImages]);
+      // 각 이미지에 대해 bg removal 호출
+      if (onBgRemoval) {
+        newImages.forEach((img) => onBgRemoval(img.id, img.file));
+      }
     },
-    [images, onImagesChange]
+    [images, onImagesChange, onBgRemoval]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -111,6 +117,22 @@ export default function ImageUploader({ images, onImagesChange }: ImageUploaderP
                   alt={`제품 사진 (${img.angle})`}
                   className="w-full h-full object-cover"
                 />
+                {/* 배경 제거 상태 */}
+                {img.bgRemovalStatus === "pending" && (
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 text-white animate-spin" />
+                  </div>
+                )}
+                {img.bgRemovalStatus === "done" && (
+                  <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm">
+                    <Check className="h-3.5 w-3.5 text-white" />
+                  </div>
+                )}
+                {img.bgRemovalStatus === "error" && (
+                  <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-destructive flex items-center justify-center shadow-sm">
+                    <AlertCircle className="h-3.5 w-3.5 text-white" />
+                  </div>
+                )}
                 {/* 삭제 버튼 */}
                 <Button
                   variant="destructive"
@@ -120,6 +142,17 @@ export default function ImageUploader({ images, onImagesChange }: ImageUploaderP
                 >
                   <X className="h-4 w-4" />
                 </Button>
+                {/* 재시도 버튼 (에러 시) */}
+                {img.bgRemovalStatus === "error" && onBgRemoval && (
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute bottom-14 right-2 h-8 w-8"
+                    onClick={() => onBgRemoval(img.id, img.file)}
+                  >
+                    <RotateCw className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </div>
 
               {/* 각도 선택 */}

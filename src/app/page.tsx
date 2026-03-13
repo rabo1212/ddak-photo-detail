@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import StepWizard from "@/components/wizard/StepWizard";
 import ImageUploader from "@/components/upload/ImageUploader";
-import StyleHintInput from "@/components/prompt/StyleHintInput";
+import ShotTypeSelector from "@/components/prompt/ShotTypeSelector";
 import ImageGallery from "@/components/gallery/ImageGallery";
 import ProductInfoForm from "@/components/product/ProductInfoForm";
 import PageMoodSelector from "@/components/product/PageMoodSelector";
@@ -24,7 +24,10 @@ import type {
   PageMood,
   CopyData,
   VideoGeneration,
+  ShotType,
+  CustomDirection,
 } from "@/lib/types";
+import { buildHintFromSelections } from "@/lib/shot-types";
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
@@ -32,8 +35,10 @@ export default function Home() {
 
   // Step 1: 업로드 이미지
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
-  // Step 2: 스타일 힌트
-  const [styleHint, setStyleHint] = useState("");
+  // Step 2: 촬영 타입 + 테마 + 커스텀
+  const [selectedShotTypes, setSelectedShotTypes] = useState<ShotType[]>(["studio", "lifestyle"]);
+  const [selectedThemes, setSelectedThemes] = useState<Record<string, string[]>>({});
+  const [customDirection, setCustomDirection] = useState<CustomDirection>({});
   const [generatedPrompts, setGeneratedPrompts] = useState<GeneratedPrompt[]>([]);
   // Step 3: AI 생성 이미지
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
@@ -71,7 +76,9 @@ export default function Home() {
       if (!saved) return;
       const s = JSON.parse(saved);
       if (s.currentStep) setCurrentStep(s.currentStep);
-      if (s.styleHint) setStyleHint(s.styleHint);
+      if (s.selectedShotTypes?.length) setSelectedShotTypes(s.selectedShotTypes);
+      if (s.selectedThemes) setSelectedThemes(s.selectedThemes);
+      if (s.customDirection) setCustomDirection(s.customDirection);
       if (s.generatedPrompts?.length) setGeneratedPrompts(s.generatedPrompts);
       if (s.generatedImages?.length) setGeneratedImages(s.generatedImages);
       if (s.selectedImages?.length) setSelectedImages(s.selectedImages);
@@ -88,7 +95,9 @@ export default function Home() {
     try {
       const state = {
         currentStep,
-        styleHint,
+        selectedShotTypes,
+        selectedThemes,
+        customDirection,
         generatedPrompts,
         // 이미지 URL이 많으면 용량 초과 → 20개 제한
         generatedImages: generatedImages.slice(0, 20),
@@ -103,21 +112,21 @@ export default function Home() {
       if (e instanceof DOMException && e.name === "QuotaExceededError") {
         // 용량 초과 시 이미지/HTML 제외하고 저장
         try {
-          const minState = { currentStep, styleHint, generatedPrompts, productInfo };
+          const minState = { currentStep, selectedShotTypes, selectedThemes, customDirection, generatedPrompts, productInfo };
           localStorage.setItem("ddak-state", JSON.stringify(minState));
         } catch {
           // 그래도 실패하면 무시
         }
       }
     }
-  }, [currentStep, styleHint, generatedPrompts, generatedImages, selectedImages, productInfo, copyData, pageHtml]);
+  }, [currentStep, selectedShotTypes, selectedThemes, customDirection, generatedPrompts, generatedImages, selectedImages, productInfo, copyData, pageHtml]);
 
   const canNext = useCallback((): boolean => {
     switch (currentStep) {
       case 1:
-        return uploadedImages.length > 0;
+        return uploadedImages.length > 0 && uploadedImages.every((img) => img.bgRemovalStatus === "done");
       case 2:
-        return uploadedImages.length > 0; // 힌트는 선택사항
+        return selectedShotTypes.length > 0;
       case 3:
         return generatedImages.length > 0 || uploadedImages.length > 0;
       case 4:
@@ -131,7 +140,7 @@ export default function Home() {
       default:
         return false;
     }
-  }, [currentStep, uploadedImages, generatedImages, selectedImages, productInfo, pageHtml]);
+  }, [currentStep, uploadedImages, selectedShotTypes, generatedImages, selectedImages, productInfo, pageHtml]);
 
   const handleNext = async () => {
     setError(null);
@@ -170,6 +179,31 @@ export default function Home() {
     }
   };
 
+  // 배경 제거 (업로드 시 자동 호출)
+  const handleBgRemoval = useCallback(async (imageId: string, file: File) => {
+    setUploadedImages((prev) =>
+      prev.map((img) => img.id === imageId ? { ...img, bgRemovalStatus: "pending" as const } : img)
+    );
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await fetch("/api/remove-bg", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("배경 제거 실패");
+      const data = await res.json();
+      setUploadedImages((prev) =>
+        prev.map((img) =>
+          img.id === imageId
+            ? { ...img, foregroundUrl: data.foregroundUrl, maskUrl: data.maskUrl, bgRemovalStatus: "done" as const }
+            : img
+        )
+      );
+    } catch {
+      setUploadedImages((prev) =>
+        prev.map((img) => img.id === imageId ? { ...img, bgRemovalStatus: "error" as const } : img)
+      );
+    }
+  }, []);
+
   const generateImages = async () => {
     if (uploadedImages.length === 0 || isGenerating) return;
     setIsGenerating(true);
@@ -179,9 +213,10 @@ export default function Home() {
       const firstImg = uploadedImages[0];
       const analyzeForm = new FormData();
       analyzeForm.append("image", firstImg.file);
-      if (styleHint.trim()) {
-        analyzeForm.append("hint", styleHint.trim());
-      }
+      // 구조화된 힌트 생성
+      const hint = buildHintFromSelections(selectedShotTypes, selectedThemes, customDirection);
+      analyzeForm.append("hint", hint);
+      analyzeForm.append("shotTypes", JSON.stringify(selectedShotTypes));
 
       const analyzeRes = await fetch("/api/analyze-product", {
         method: "POST",
@@ -199,9 +234,17 @@ export default function Home() {
 
       // Step 2: 모든 이미지에 같은 프롬프트 적용 (병렬 생성)
       const genPromises = uploadedImages.map(async (img) => {
+        // bg removal 완료 여부 방어 체크
+        if (!img.foregroundUrl || !img.maskUrl) {
+          throw new Error("배경 제거가 완료되지 않은 이미지가 있습니다. 이전 단계로 돌아가 확인해주세요.");
+        }
+
+        // FormData로 전송 (Vercel 4.5MB JSON 제한 회피 — File은 스트리밍)
         const genForm = new FormData();
         genForm.append("image", img.file);
         genForm.append("prompts", JSON.stringify(analysis.prompts));
+        genForm.append("foregroundUrl", img.foregroundUrl);
+        genForm.append("maskUrl", img.maskUrl);
 
         const genRes = await fetch("/api/generate-image", {
           method: "POST",
@@ -390,18 +433,25 @@ export default function Home() {
           <p className="text-muted-foreground">
             제품 누끼 사진을 최대 6장 업로드하세요. 정면, 측면, 후면 등 다양한 각도를 권장합니다.
           </p>
-          <ImageUploader images={uploadedImages} onImagesChange={setUploadedImages} />
+          <ImageUploader images={uploadedImages} onImagesChange={setUploadedImages} onBgRemoval={handleBgRemoval} />
         </div>
       )}
 
-      {/* Step 2: 연출 설정 (AI 동적 생성) */}
+      {/* Step 2: 연출 설정 (샷타입 + 테마 선택) */}
       {currentStep === 2 && (
         <div className="space-y-4">
           <h2 className="text-2xl sm:text-display font-bold tracking-tight text-gradient">연출 설정</h2>
           <p className="text-muted-foreground">
-            원하는 분위기가 있으면 힌트를 입력하세요. 비워두면 AI가 알아서 최적의 연출을 만듭니다.
+            촬영 타입과 배경 테마를 선택하세요. AI가 제품에 맞게 최적의 연출을 만듭니다.
           </p>
-          <StyleHintInput hint={styleHint} onHintChange={setStyleHint} />
+          <ShotTypeSelector
+            selectedShotTypes={selectedShotTypes}
+            onShotTypesChange={setSelectedShotTypes}
+            selectedThemes={selectedThemes}
+            onThemesChange={setSelectedThemes}
+            customDirection={customDirection}
+            onCustomDirectionChange={setCustomDirection}
+          />
         </div>
       )}
 
